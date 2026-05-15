@@ -1,5 +1,5 @@
 
-%% TB CAD Reliability Layer — IJACSA Manuscript
+%% TB CAD Clinical Workflow Integration Layer — IJACSA Manuscript
 %% Formatted per ijacsa-format.tex (IEEEtran conference, letterpaper)
 
 \documentclass[conference, letterpaper]{IEEEtran}
@@ -50,7 +50,7 @@
 
 \begin{document}
 
-\title{A Reliability-Centered Workflow Layer for Tuberculosis Computer-Aided Detection in Hospital Chest X-Ray Screening}
+\title{A Clinical Workflow Integration Layer for Tuberculosis Diagnosis in Chest X-ray Imaging}
 
 \author{\IEEEauthorblockN{Raphael B. Alampay~\orcidlink{0000-0001-7498-8830}}
 \IEEEauthorblockA{Department of Information Systems\\
@@ -87,12 +87,12 @@ Email: pabu@ateneo.edu}
 % ABSTRACT
 % ============================================================
 \begin{abstract}
-Tuberculosis (TB) remains a leading infectious cause of death worldwide, with the Philippines ranking among the highest-burden countries globally. Computer-aided detection (CAD) for TB on chest X-ray has reached sufficient maturity that the World Health Organization (WHO) recommended its use for screening in 2021, and six commercial products met WHO performance standards in a 2025 policy update. Despite strong detection accuracy, the transition from laboratory performance to reliable hospital deployment remains incomplete: workflow integration, input quality assurance, uncertainty communication, clinician-facing explanation of findings, and post-deployment monitoring are underdeveloped in current systems. This paper presents a prototype reliability-centered workflow layer designed to wrap around a mature TB CAD backbone. The lead contribution is a clinically grounded multimodal explanation module that translates model findings into natural-language statements linking suspected abnormalities to their visual basis on the radiograph---a feature not clearly present as a deployed capability in the commercial products reviewed. Supporting modules include an input quality gate, an uncertainty-aware deferral mechanism, a structured evidence interface, and a post-deployment monitoring dashboard. The system is framed as an academic prototype for hospital chest X-ray screening workflows, with preliminary evaluation focused on feasibility and clinical utility rather than claims of algorithmic novelty in the underlying classifier.
+Tuberculosis (TB) remains a leading infectious cause of death worldwide, with the Philippines ranking among the highest-burden countries globally. Computer-aided detection (CAD) for TB on chest X-ray has reached sufficient maturity that the World Health Organization (WHO) recommended its use for screening in 2021, and six commercial products met WHO performance standards in a 2025 policy update. Despite strong detection accuracy, the transition from laboratory performance to reliable hospital deployment remains incomplete: workflow integration, input quality assurance, uncertainty communication, clinician-facing explanation of findings, and post-deployment monitoring are underdeveloped in current systems. This paper presents a prototype clinical workflow integration layer designed to wrap around a mature TB CAD backbone. The lead contribution is a clinically grounded multimodal explanation module that translates model findings into natural-language statements linking suspected abnormalities to their visual basis on the radiograph---a feature not clearly present as a deployed capability in the commercial products reviewed. Supporting modules include an input quality gate, an uncertainty-aware deferral mechanism, a structured evidence interface, and a post-deployment monitoring dashboard. The system is framed as an academic prototype for hospital chest X-ray screening workflows, with preliminary evaluation focused on feasibility and clinical utility rather than claims of algorithmic novelty in the underlying classifier.
 % TODO: Add quantitative results summary once evaluation is complete.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Tuberculosis; Computer-Aided Detection; Chest X-Ray; Explainability; Clinical Workflow; Reliability; Medical Imaging AI
+Tuberculosis; Computer-Aided Detection; Chest X-Ray; Explainability; Clinical Workflow; Medical Imaging AI
 \end{IEEEkeywords}
 
 \IEEEpeerreviewmaketitle
@@ -133,7 +133,7 @@ Several specific gaps emerge from this literature:
 
 \subsection{Scope and Contribution}
 
-This paper addresses the workflow integration gap by presenting a prototype \textbf{reliability-centered workflow layer} for TB CAD in hospital CXR screening. Rather than proposing a new classifier, the system wraps clinician-facing modules around a mature classification backbone:
+This paper addresses the workflow integration gap by presenting a prototype \textbf{clinical workflow integration layer} for TB CAD in hospital CXR screening. Rather than proposing a new classifier, the system wraps clinician-facing modules around a mature classification backbone:
 
 \begin{enumerate}
     \item A \textbf{multimodal explanation module} that generates natural-language descriptions of AI-detected findings, linking suspected abnormalities to localized visual evidence. This is the lead contribution.
@@ -174,7 +174,7 @@ A feature comparison across five commercial CAD systems---qXR (Qure.ai), CAD4TB+
 
 \begin{table*}[!t]
 \renewcommand{\arraystretch}{1.2}
-\caption{Feature presence across reviewed commercial TB CAD products and the proposed reliability layer, based on official product documentation for qXR~\cite{qxr_docs}, CAD4TB+~\cite{cad4tb_product}, Lunit INSIGHT CXR~\cite{lunit_product}, Annalise Enterprise CXR~\cite{annalise_product}, and Siemens AI-Rad Companion~\cite{siemens_product}. A checkmark indicates a documented feature; a blank indicates absence or lack of clear evidence in the reviewed materials. Siemens publishes AI-confidence scores but without an explicit deferral workflow.}
+\caption{Feature presence across reviewed commercial TB CAD products and the proposed clinical workflow integration layer, based on official product documentation for qXR~\cite{qxr_docs}, CAD4TB+~\cite{cad4tb_product}, Lunit INSIGHT CXR~\cite{lunit_product}, Annalise Enterprise CXR~\cite{annalise_product}, and Siemens AI-Rad Companion~\cite{siemens_product}. A checkmark indicates a documented feature; a blank indicates absence or lack of clear evidence in the reviewed materials. Siemens publishes AI-confidence scores but without an explicit deferral workflow.}
 \label{tab:product_comparison}
 \centering
 \small
@@ -241,11 +241,11 @@ The model is trained on \textbf{TBX11K}, a public dataset of 11,200 chest radiog
 Because the TBX11K annotation schema labels regions as \textit{active\_tb} or \textit{latent\_tb} rather than as specific findings (e.g., ``cavitation''), the system performs a second pass: each detected TB region is intersected with a pretrained anatomical lung-zone segmentation~\cite{cohen2022torchxrayvision} to obtain an anatomical descriptor (lung side and zone), and with the Shenzhen finding taxonomy to obtain a candidate finding label. The final per-image output consists of (1) an image-level TB probability score, (2) a list of detected regions with bounding-box coordinates, TB-type class probability, anatomical zone, and candidate finding label, and (3) a spatial activation map retained for the heatmap overlay.
 
 % ============================================================
-% IV. RELIABILITY LAYER COMPONENTS
+% IV. CLINICAL WORKFLOW INTEGRATION LAYER COMPONENTS
 % ============================================================
-\section{Reliability Layer Components}
+\section{Clinical Workflow Integration Layer Components}
 
-The reliability layer comprises five modules that surround the TB scoring backbone, implementing a pipeline that checks the input, qualifies the prediction, explains the result, and monitors the system over time.
+The clinical workflow integration layer comprises five modules that surround the TB scoring backbone, implementing a pipeline that checks the input, qualifies the prediction, explains the result, and monitors the system over time.
 
 \subsection{Input Quality Gate}
 
@@ -381,7 +381,7 @@ The evaluation is organized into three components.
     % TODO: Report walkthrough findings.
     \item \textbf{Usability feedback:} questionnaire responses on clarity, usefulness, and trustworthiness.
     % TODO: Report usability findings.
-    \item \textbf{Time-on-task:} time to review a case with and without the reliability layer.
+    \item \textbf{Time-on-task:} time to review a case with and without the clinical workflow integration layer.
     % TODO: Report timing data if collected.
 \end{itemize}
 
@@ -441,7 +441,7 @@ This work has several limitations. First, the system has not been evaluated in a
 
 \begin{itemize}
     \item \textbf{Prospective clinical evaluation.} Hospital deployment with measurement of diagnostic outcomes, clinician behavior, and patient impact.
-    \item \textbf{Cost-effectiveness analysis.} Assessment of whether the reliability layer reduces unnecessary testing, missed cases, or clinical time. Cost data for AI-CAD workflows in high-burden settings are fragmented; a local pilot study would be needed to produce credible estimates.
+    \item \textbf{Cost-effectiveness analysis.} Assessment of whether the clinical workflow integration layer reduces unnecessary testing, missed cases, or clinical time. Cost data for AI-CAD workflows in high-burden settings are fragmented; a local pilot study would be needed to produce credible estimates.
     \item \textbf{Photographed-film workflows.} Extension of the quality gate to handle smartphone-captured analog radiographs, common in rural health facilities in high-burden countries, with dedicated evaluation of domain shift~\cite{nasser2023photographed}.
     \item \textbf{Formal explanation validation.} Systematic comparison of generated explanations against radiologist reports.
     \item \textbf{Trainee-oriented evaluation.} Primary user research with residents and non-radiologist physicians to determine whether a dedicated trainee mode is actually demanded, what form it should take, and whether it produces durable skill gains rather than in-session dependence.
