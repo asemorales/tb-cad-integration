@@ -341,37 +341,6 @@ The multimodal explanation module is the lead contribution. It translates the cl
 
 Given a radiograph and the classifier's output, the module generates a statement identifying the suspected finding (for example, a cavitary lesion, upper-lobe infiltrate, or pleural effusion), its anatomical location (for example, the right upper lobe or left costophrenic angle), and a clinical reasoning link connecting the finding to the TB classification. An example output: \textit{``TB suspected. The model identified an area of increased opacity in the right upper lobe consistent with an infiltrate. Upper-lobe infiltrates are among the most common radiographic findings in active pulmonary tuberculosis.''} This differs from heatmap-only explanations in two ways. First, it names the finding in clinical vocabulary rather than highlighting a region. Second, it provides a reason, grounded in radiographic knowledge, for why that finding supports a TB classification.
 
-\subsection{Dataset}
-
-For finer-grained finding labels, such as cavity, consolidation, infiltrate, and pleural effusion, the module uses the Shenzhen TB annotation set~\cite{yang2022shenzhen_annotations}, which supplies pixel-level masks for 19 abnormality types on 336 TB-positive cases.
-
-\subsection{Data Preprocessing}
-
-Each detected region's bounding-box centroid is intersected with the anatomical lung-zone segmentation from the quality-assessment stage~\cite{cohen2022torchxrayvision} to produce an anatomical descriptor (left or right; upper, middle, or lower zone). Each region is then mapped to a candidate finding label drawn from the Shenzhen TB abnormality taxonomy~\cite{yang2022shenzhen_annotations}; when the TB detector flags only \textit{active\_tb} or \textit{latent\_tb} without a specific finding type, a secondary finding classifier trained on the Shenzhen annotations produces a label.
-
-\subsection{Model Architecture}
-
-The module is a post-processing stage that runs after the TB detection module produces bounding boxes and class probabilities. It has two stages: \emph{structured templating} followed by \emph{large language model (LLM) smoothing}. The image itself is withheld from the LLM. This design prevents the LLM from inventing findings the detector did not produce: because the LLM receives only a structured record of detected regions, it cannot narrate anatomical findings outside that record.
-
-The most closely related published system is the two-stage pipeline of Danu et al.~\cite{siemens_llm_cxr_2023}, in which a multi-class thoracic detector emits class probabilities that are concatenated as a prompt to a domain-adapted LLM (RadBloomz) for report generation. The present architecture takes the same decomposition as prior art but differs in two respects: (1) it restricts the controlled vocabulary to TB-relevant findings rather than a general thoracic taxonomy, and (2) it does not rely on a fine-tuned biomedical LLM, whose weights are not publicly available in the Danu et al. work; instead it uses a generic hosted LLM constrained by prompt and template. The authors of the prior work themselves report that their end-to-end approach suffers from hallucination and repetition in some outputs~\cite{siemens_llm_cxr_2023}, which motivates the grounding-by-construction approach here.
-
-Consuming the (finding, anatomical zone, probability) records produced in the preprocessing stage, the generation pipeline proceeds as follows:
-
-\begin{enumerate}
-    \item \textbf{Templated sentence generation.} Each (finding, anatomical zone, probability) triple is slot-filled into a controlled sentence template, producing a deterministic structured record in the form \textit{``\{finding\} in \{zone\} ({prob:.0\%} confidence).''}
-    \item \textbf{Natural-language smoothing.} The structured list of template sentences is passed, without the radiograph image, to a hosted general-purpose LLM with a system prompt that instructs it to rewrite the list as a single fluent clinical paragraph, add no findings absent from the list, and preserve anatomical and probability information verbatim.
-    \item \textbf{Post-hoc verification.} Output text is parsed with a named-entity recognition pass to check that every finding mentioned in the output appears in the input list. Outputs with unsupported entities are rejected and replaced by the deterministic templated text alone.
-\end{enumerate}
-
-\subsection{Model Training}
-
-The secondary finding classifier is trained on the Shenzhen TB annotations~\cite{yang2022shenzhen_annotations}; the natural-language smoothing stage uses a hosted general-purpose LLM without task-specific fine-tuning, constrained by prompt and template.
-% TODO: Report the finding-classifier training configuration and the specific hosted LLM once finalized.
-
-\subsection{Results}
-
-% TODO: Report example explanation outputs, qualitative assessment against radiologist interpretation, and failure-mode examples.
-
 % ============================================================
 % STRUCTURED EVIDENCE INTERFACE
 % ============================================================
