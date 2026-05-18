@@ -63,6 +63,17 @@ COLOR_SPECS = {
 SMOOTH_WIN = 5            # moving-average window over extracted samples
 MIN_PX_PER_COL = 1        # ignore image columns with fewer matching pixels
 
+# --- replot palette ---------------------------------------------------------
+# Harmonious, print-safe, and colorblind-safe (Okabe-Ito). The aggregate
+# 'all classes' line gets the primary blue and is drawn boldest; the two real
+# classes get green / vermillion so they stay distinct from each other and from
+# the aggregate even in grayscale or for deuteranopic readers.
+PLOT_COLORS = {
+    "all":      "#0072B2",  # blue (primary, bold)
+    "active":   "#009E73",  # bluish green
+    "obsolete": "#D55E00",  # vermillion
+}
+
 
 def load_rgb(path):
     return np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
@@ -256,7 +267,8 @@ def main():
             continue
 
         lw = 1.8 if name == "all" else 1.0
-        ax.plot(x, y, label=labels[name], linewidth=lw)
+        ax.plot(x, y, label=labels[name], linewidth=lw,
+                color=PLOT_COLORS[name])
         for xi, yi in zip(x, y):
             rows.append((name, xi, yi))
 

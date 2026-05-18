@@ -12,6 +12,8 @@
 \usepackage[caption=false, font=footnotesize]{subfig}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{tabularx}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
 \usepackage{url}
 \usepackage{orcidlink}
 \usepackage{threeparttable}
@@ -104,16 +106,16 @@ Radiologist performance in TB screening has been demonstrated to agree with or i
 \label{tab:product_comparison}
 \scriptsize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}p{3.0cm} *{9}{c}@{}}
+\begin{tabularx}{\textwidth}{@{}X *{8}{c}@{}}
 \toprule
-\textbf{Feature} & \textbf{qXR}~\cite{qxr_docs} & \textbf{CAD4TB+}~\cite{cad4tb_product} & \textbf{Lunit}~\cite{lunit_product} & \textbf{DrAid}~\cite{draid_product} & \textbf{Genki}~\cite{genki_product} & \textbf{InferRead}~\cite{inferread_product} & \textbf{Annalise}~\cite{annalise_product} & \textbf{Siemens}~\cite{siemens_product} & \textbf{Proposed} \\
+\textbf{Feature} & \textbf{qXR}~\cite{qxr_docs} & \textbf{CAD4TB+}~\cite{cad4tb_product} & \textbf{Lunit}~\cite{lunit_product} & \textbf{DrAid}~\cite{draid_product} & \textbf{Genki}~\cite{genki_product} & \textbf{InferRead}~\cite{inferread_product} & \textbf{Siemens}~\cite{siemens_product} & \textbf{Proposed} \\
 \midrule
-Chest X-ray quality assessment            &              &              &              & \textit{n/a} & \textit{n/a} &              &              & $\checkmark$ & $\checkmark$ \\
-Monitoring and analytics dashboard            &              &              & $\checkmark$ & \textit{n/a} & \textit{n/a} &              &              &              & $\checkmark$ \\
-Heatmap/overlay of localization findings  & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
-Clinically grounded reasoning of findings in natural language &            &              &              & \textit{n/a} & \textit{n/a} &              &              &              & $\checkmark$ \\
+Chest X-ray quality assessment            &              &              &              & \textit{n/a} & \textit{n/a} &              & $\checkmark$ & $\checkmark$ \\
+Monitoring and analytics dashboard            &              &              & $\checkmark$ & \textit{n/a} & \textit{n/a} &              &              & $\checkmark$ \\
+Heatmap/overlay of localization findings  & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+Explanation of findings in natural language &            &              &              & \textit{n/a} & \textit{n/a} &              &              & $\checkmark$ \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \begin{tablenotes}[flushleft]
 \scriptsize
 \item $\checkmark$ marks a feature documented as present; blank marks a feature documented as absent or not offered; \textit{n/a} marks features for which no documentation was found.
@@ -152,17 +154,24 @@ This paper addresses gaps in integration into clinical workflows by presenting a
 
 \begin{enumerate}
     \item A \textbf{natural language explanation module} that generates natural-language descriptions of AI-detected findings, linking suspected abnormalities to localized visual evidence. This is the lead contribution.
-    \item An \textbf{input quality gate} that screens radiographs for acquisition defects before inference.
+    \item An \textbf{input quality assessment module} that screens radiographs for acquisition defects before inference.
     \item A \textbf{structured evidence interface} presenting the TB score, risk classification, quality status, and localized evidence in a compact clinical panel.
     \item A \textbf{post-deployment monitoring dashboard} tracking system behavior over time.
 \end{enumerate}
 
-As a secondary contribution, we develop and benchmark two custom tuberculosis models, DraxNet and FlipR, for image-level classification and bounding-box localization, evaluated against SOTA baselines.
+As a secondary contribution, we develop and benchmark several custom models for image-level classification and bounding-box localization.
 
 % ============================================================
 % II. MATERIALS AND METHODS
 % ============================================================
 \section{System Architecture}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{../figures/pipeline.png}
+    \caption{Overview of the proposed TB CAD pipeline.}
+    \label{fig:pipeline}
+\end{figure}
 
 The system processes a CXR through a sequential pipeline:
 
@@ -212,16 +221,9 @@ The following sections describe each component: input quality assessment (Sectio
 \section{Tuberculosis Classification}
 \label{sec:tb_classification}
 
-The TB classification module classifies each CXR as either healthy, sick non-TB, or TB as seen in Figure~\ref{fig:cxr_scans}.
+The TB classification module classifies each CXR as either healthy, sick non-TB, or TB as seen in Figure~\ref{fig:pipeline}.
 
 \subsection{Dataset}
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\linewidth]{../figures/cxr-scans.png}
-    \caption{Representative chest X-rays and labels from the TBX11K dataset.}
-    \label{fig:cxr_scans}
-\end{figure}
 
 Classification and localization models are trained on TBX11K, a public dataset of 11,200 CXRs with image-level labels (\textit{healthy}, \textit{sick non-TB}, \textit{TB}) and bounding box-level labels (\textit{active-TB} and \textit{latent-TB})~\cite{liu2020tbx11k}. We use a redistribution of TBX11K with labels simplified for usability\footnote{\url{https://www.kaggle.com/datasets/vbookshelf/tbx11k-simplified}}.
 
@@ -324,9 +326,9 @@ Localization uses the bounding-box-level annotations of the TBX11K dataset, wher
 
 Similar to Section~\ref{sec:tb_classification}, the official TBX11K test labels are withheld for an online challenge~\cite{liu2023tbx11k_pami}, so detection is evaluated on the publicly available TBX11K validation set used as the held-out test set. Hence, the reported numbers are not directly comparable to SymFormer or other entries on the official TBX11K detection benchmark.
 
-Active TB and latent TB are referred to in TBX11K as \textit{ActiveTuberculosis} and \textit{ObsoletePulmonaryTuberculosis} respectively. Active TB denotes ongoing infection that is transmissible and clinically urgent. Latent TB denotes prior, healed or inactive infection that is not contagious and does not require immediate treatment, although may be at risk of reactivation. As seen in Figure~\ref{fig:cxr_scans}, active TB is more immediately visible, and latent TB is more subtle.
+Active TB and latent TB are referred to in TBX11K as \textit{ActiveTuberculosis} and \textit{ObsoletePulmonaryTuberculosis} respectively. Active TB denotes ongoing infection that is transmissible and clinically urgent. Latent TB denotes prior, healed or inactive infection that is not contagious and does not require immediate treatment, although may be at risk of reactivation. As seen in Figure~\ref{fig:pipeline}, active TB is more immediately visible, and latent TB is more subtle.
 
-In contrast to classification, which uses image-level labels, localization labels are at the bounding-box level. A CXR carrying an image-level TB label may contain only active-TB lesions, only latent-TB lesions, or lesions of both types on the same CXR, as depicted in Figure~\ref{fig:cxr_scans}.
+In contrast to classification, which uses image-level labels, localization labels are at the bounding-box level. A CXR carrying an image-level TB label may contain only active-TB lesions, only latent-TB lesions, or lesions of both types on the same CXR, as depicted in Figure~\ref{fig:pipeline}.
 
 TBX11K consists of $924$ images with active TB only, $212$ with latent TB only, and $54$ with both~\cite{liu2023tbx11k_pami}. This class composition and bounding-box level annotation is consistent with real-world conditions.
 
@@ -365,18 +367,18 @@ YOLO26 + DraxNet & LTB & --- & 0.0310 \\
 \end{threeparttable}
 \end{table}
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
 \centering
-\subfloat{\includegraphics[width=0.42\textwidth]{../figures/pr_yolo26.pdf}}
+\subfloat{\includegraphics[width=0.48\columnwidth]{../figures/pr_yolo26.pdf}}
 \hfil
-\subfloat{\includegraphics[width=0.42\textwidth]{../figures/f1_yolo26.pdf}}
+\subfloat{\includegraphics[width=0.48\columnwidth]{../figures/f1_yolo26.pdf}}
 \\
-\subfloat{\includegraphics[width=0.42\textwidth]{../figures/pr_draxnet.pdf}}
+\subfloat{\includegraphics[width=0.48\columnwidth]{../figures/pr_draxnet.pdf}}
 \hfil
-\subfloat{\includegraphics[width=0.42\textwidth]{../figures/f1_draxnet.pdf}}
+\subfloat{\includegraphics[width=0.48\columnwidth]{../figures/f1_draxnet.pdf}}
 \caption{Localization precision-recall (left) and F1-confidence (right) curves for YOLO26 (top) and YOLO26 with the DraxNet backbone (bottom). Both detectors sustain high precision while recall saturates near $0.26$, and the latent-TB (obsolete pulmonary TB) curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector. Curves were recovered from the original validation renders and verified to within $0.003$ mean average precision of the values in Table~\ref{tab:detection_results}.}
 \label{fig:detection_curves}
-\end{figure*}
+\end{figure}
 
 Localization results per class are reported in Table~\ref{tab:detection_results}.
 
@@ -545,9 +547,6 @@ Delft Imaging, ``CAD4TB+.'' [Online]. Available: https://delft.care/cad4tb/
 
 \bibitem{lunit_product}
 Lunit, ``INSIGHT CXR.'' [Online]. Available: https://www.lunit.io/en/products/cxr
-
-\bibitem{annalise_product}
-Annalise.ai, ``Enterprise CXR.'' [Online]. Available: https://www.annalise.ai/CXR
 
 \bibitem{siemens_product}
 Siemens Healthineers, ``AI-Rad Companion Chest X-Ray.'' [Online]. Available: https://academy.siemens-healthineers.com/
