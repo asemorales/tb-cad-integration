@@ -225,18 +225,17 @@ The TB classification module classifies each CXR as either healthy, sick non-TB,
 
 \subsection{Dataset}
 
-Classification and localization models are trained on TBX11K, a public dataset of 11,200 CXRs with image-level labels (\textit{healthy}, \textit{sick non-TB}, \textit{TB}) and bounding box-level labels (\textit{active-TB} and \textit{latent-TB})~\cite{liu2020tbx11k}. We use a redistribution of TBX11K with labels simplified for usability\footnote{\url{https://www.kaggle.com/datasets/vbookshelf/tbx11k-simplified}}.
+Classification and localization models are trained on TBX11K, a public dataset of 11,200 CXRs with image-level labels (\textit{healthy}, \textit{sick non-TB}, \textit{TB}) for classification and bounding box-level labels (\textit{active-TB} and \textit{latent-TB})~\cite{liu2020tbx11k} for localization (Section~\ref{sec:tb_localization}). We use a redistribution of TBX11K with labels simplified for usability\footnote{\url{https://www.kaggle.com/datasets/vbookshelf/tbx11k-simplified}}.
 
-TBX11K was selected because, as of writing, it is one of the few publicly available TB CXR datasets that simultaneously satisfies requirements for this work:
+TBX11K was selected as it is one of the few publicly available TB CXR datasets that satisfies the following:
 
 \begin{itemize}
-    \item Large TB-specific sample enough to train networks from scratch. Most public TB datasets contain only hundreds of images.
+    \item Large TB-specific split to train networks from scratch.
     \item Expert bounding-box annotations for TB regions.
-    \item Demographic composition and class imbalance reflect real-world clinical settings~\cite{liu2023tbx11k_pami}, so measured performance better reflects expected deployment behavior. The sick non-TB class is important to this realism, since in deployment a radiologist receives scans from the full patient stream, many of whom are sick with conditions other than TB, so a clinically useful model must separate TB from other disease.% TODO: Class split
-    \item Publicly available train/validation splits. The official TBX11K test labels are withheld for an ongoing online challenge~\cite{liu2023tbx11k_pami}, so we use the publicly available TBX11K validation set as our held-out test set for all experiments. Our results should therefore not be compared directly to those reported for SymFormer or other entries on the official TBX11K benchmark, which are measured on the confidential test set.
+    \item Demographic composition and class imbalance which reflect real-world clinical settings~\cite{liu2023tbx11k_pami}. The sick non-TB class is important to this realism, since in deployment a radiologist receives scans from the full patient stream, many of whom are sick with conditions other than TB, so a clinically useful model must separate TB from other disease.% TODO: Class split
 \end{itemize}
 
-The image-level labels are used for the classification experiments in this section. The same dataset's bounding-box annotations are used for localization in Section~\ref{sec:tb_localization}.
+The official TBX11K test set is withheld for an online challenge, so we use the publicly available validation set as our test set for all experiments. Our results should therefore not be compared directly to those reported for SymFormer ~\cite{liu2023tbx11k_pami} or other entries on the online challenge, which are measured on the private test set.
 
 \subsection{Data Preprocessing}
 
@@ -248,29 +247,27 @@ We evaluate nine classifiers: six standard baselines and three custom models. Ba
 
 \subsubsection{DraxNet}
 
-DraxNet is a custom model ($17.0$M parameters) based on a ResNet-18 backbone. The main modification is that the fourth layer consists of two custom blocks called \emph{DraxResidualBlocks}. All other components are unchanged from ResNet-18.
+DraxNet is a custom model ($17.0$M parameters) based on a ResNet-18 backbone. The main modification is that the fourth layer consists of two ResNet blocks, each with a custom mixer (\emph{DraxBlock}) inserted between its two convolutions. All other components are unchanged from ResNet-18.
 
-A \emph{DraxResidualBlock} uses the same residual and internal layers as a ResNet block, but inserts a custom mixer, the \emph{DraxBlock}, between its two convolutions.
+\emph{DraxBlock} is a conv-attention hybrid that consists of a ConvNeXt local convolutional branch followed by an optional self-attention branch. Residuals are fused through a stochastic-depth block.
 
-The \emph{DraxBlock} is a conv-attention hybrid that consists of a ConvNeXt local convolutional branch followed by an optional SelfAttention2D branch. Residuals are fused through a stochastic depth (DropPath) block.
-
-The name DraxNet abbreviates Dynamic Residual Attention eXchange. The design rationale is to use the well-understood ResNet-18 backbone for the high-resolution early stages and introduce the heavier custom mixer only at the final, lowest-resolution stage where the feature map is most compact, which adds attention capacity with fewer additional parameters and compute.
+DraxNet refers to Dynamic Residual Attention eXchange. The rationale is to use the well-understood ResNet-18 backbone for the high-resolution early stages and introduce the heavier custom mixer only at the final, lowest-resolution stage where the feature map is most compact, which adds attention capacity with fewer additional parameters and compute.
 
 \subsubsection{Drax-MobileNetV3-Large}
 
-Drax-MobileNetV3-Large is a second custom variant ($6.1$M parameters) that applies the same DraxBlock idea to a more parameter-efficient backbone. The MobileNetV3-Large feature extractor and classification head are kept unchanged, and a bottlenecked \emph{DraxBlock} is inserted after the final feature stage. The bottleneck keeps the added capacity small, so the overall model remains close to MobileNetV3-Large in parameter count while testing whether the DraxBlock generalizes beyond a ResNet-style backbone.
+Drax-MobileNetV3-Large is a second custom variant ($6.1$M parameters) that applies the same DraxBlock idea to a more parameter-efficient backbone. The MobileNetV3-Large feature extractor and classification head are kept unchanged, and a bottlenecked \emph{DraxBlock} is inserted after the final feature stage, keeping the overall model close to MobileNetV3-Large in parameter count while testing whether the DraxBlock generalizes beyond a ResNet-style backbone.
 
 \subsubsection{FlipR}
 
 FlipR is a lightweight custom model ($2.8$M parameters) built on a ResNet-18 backbone. The ResNet-18 stem, layers, and classification head are unchanged. A custom block, named \emph{FlipR}, is inserted between layers.
 
-The \emph{FlipR} block computes the difference between each feature map and its horizontally flipped counterpart (where the flipped version is first smoothed with average pooling to account for imperfect anatomical symmetry). From this, a gated mask is broadcast across all channels at once.
+The \emph{FlipR} block computes the difference between each feature map and its horizontally flipped counterpart after a smoothing step with average pooling, which accounts for imperfect anatomical symmetry. From this, a gated mask is broadcast across all channels at once.
 
-The block is inspired by the SymAttention mechanism of SymFormer~\cite{liu2023tbx11k_pami}, which observes that bilateral asymmetry in the chest radiograph is a key indicator of TB. The design goal is to test whether a simple, parameter-efficient symmetry-aware gate can capture the same bilateral-asymmetry cue as heavier spatial-transformer approaches. Hence, FlipR has roughly one-quarter the parameters of ResNet-18.
+The block is inspired by SymAttention~\cite{liu2023tbx11k_pami}, which observes that bilateral asymmetry in CXRs is a key indicator of TB. FlipR tests whether a lightweight symmetry gate can achieve this over heavier attention-based approaches.
 
 \subsection{Model Training}
 
-All models are trained from scratch with a random seed of $42$, batch size of $16$, $512\times512$ input resolution, and $100$ epochs. Optimization uses the Adam optimizer with a fixed learning rate of $10^{-3}$, no learning-rate schedule, and an unweighted cross-entropy loss. No hyperparameter tuning was done.
+All models are trained from scratch with a fixed random seed, batch size of $16$, $512\times512$ input resolution, and $100$ epochs, using Adam with a fixed learning rate of $10^{-3}$, no learning-rate schedule, and an unweighted cross-entropy loss. No hyperparameter tuning was done.
 
 \begin{table*}[!tb]
 \renewcommand{\arraystretch}{1.2}
@@ -326,13 +323,9 @@ Smaller models outperform larger ones across the board. MobileNetV3-Large ($5.5$
 
 Localization uses the bounding-box-level annotations of the TBX11K dataset, where each region is classified as either active TB or latent TB~\cite{liu2020tbx11k}.
 
-Similar to Section~\ref{sec:tb_classification}, the official TBX11K test labels are withheld for an online challenge~\cite{liu2023tbx11k_pami}, so detection is evaluated on the publicly available TBX11K validation set used as the held-out test set. Hence, the reported numbers are not directly comparable to SymFormer or other entries on the official TBX11K detection benchmark.
+Active TB denotes ongoing infection that is transmissible and requires treatment. Latent TB denotes prior, healed or inactive infection that is not contagious and does not require immediate treatment, although may be at risk of reactivation. As seen in Figure~\ref{fig:pipeline}, active TB is more immediately visible, and latent TB is more subtle.
 
-Active TB and latent TB are referred to in TBX11K as \textit{ActiveTuberculosis} and \textit{ObsoletePulmonaryTuberculosis} respectively. Active TB denotes ongoing infection that is transmissible and clinically urgent. Latent TB denotes prior, healed or inactive infection that is not contagious and does not require immediate treatment, although may be at risk of reactivation. As seen in Figure~\ref{fig:pipeline}, active TB is more immediately visible, and latent TB is more subtle.
-
-In contrast to classification, which uses image-level labels, localization labels are at the bounding-box level. A CXR carrying an image-level TB label may contain only active-TB lesions, only latent-TB lesions, or lesions of both types on the same CXR, as depicted in Figure~\ref{fig:pipeline}.
-
-TBX11K consists of $924$ images with active TB only, $212$ with latent TB only, and $54$ with both~\cite{liu2023tbx11k_pami}. This class composition and bounding-box level annotation is consistent with real-world conditions.
+A CXR classified as TB at the image-level may contain only active-TB lesions ($924$ images), only latent-TB lesions ($212$ images), or lesions of both types ($54$ images), as depicted in Figure~\ref{fig:pipeline}. This class composition is consistent with real-world conditions.
 
 \subsection{Model Architecture}
 
@@ -340,9 +333,7 @@ We evaluate YOLO26 and a custom variant, YOLO26 with a DraxNet backbone. In the 
 
 \subsection{Model Training}
 
-Localization model training uses the same configuration as the training for classification models reported in Section~\ref{sec:tb_classification}.
-
-\subsection{Results}
+Localization uses the same configuration as model training for classification models reported in Section~\ref{sec:tb_classification}.
 
 \begin{table}[!ht]
 \renewcommand{\arraystretch}{1.2}
@@ -369,6 +360,8 @@ YOLO26 + DraxNet & LTB & --- & 0.0310 \\
 \end{threeparttable}
 \end{table}
 
+\subsection{Results}
+
 \begin{figure}[!t]
 \centering
 \subfloat{\includegraphics[width=0.48\columnwidth]{../figures/pr_yolo26.pdf}}
@@ -378,7 +371,7 @@ YOLO26 + DraxNet & LTB & --- & 0.0310 \\
 \subfloat{\includegraphics[width=0.48\columnwidth]{../figures/pr_draxnet.pdf}}
 \hfil
 \subfloat{\includegraphics[width=0.48\columnwidth]{../figures/f1_draxnet.pdf}}
-\caption{Localization precision-recall (left) and F1-confidence (right) curves for YOLO26 (top) and YOLO26 with the DraxNet backbone (bottom). Both detectors sustain high precision while recall saturates near $0.26$, and the latent-TB (obsolete pulmonary TB) curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector. Curves were recovered from the original validation renders and verified to within $0.003$ mean average precision of the values in Table~\ref{tab:detection_results}.}
+\caption{Localization precision-recall (left) and F1-confidence (right) curves for YOLO26 (top) and YOLO26 with the DraxNet backbone (bottom). Both sustain high precision while recall saturates near $0.26$, and the latent-TB curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector.}
 \label{fig:detection_curves}
 \end{figure}
 
@@ -396,11 +389,11 @@ YOLO26 with DraxNet backbone improves active TB localization substantially over 
 \textbf{Recall, not precision, is the bottleneck.}
 Both detectors localize confidently but detect only about a quarter of the annotated TB regions. In Figure~\ref{fig:detection_curves}, precision stays high while recall saturates near $0.26$, and the latent-TB curve collapses at low confidence for both detectors. 
 
-\textbf{Localization is useful to detect TB, but should not be used to exclude TB.} Clinically, the high-precision, low-recall profile defines how localization should be used. A flagged lesion is relatively likely to be correct and thus warrants focused radiologist review, but the detector must not be used to exclude TB since most annotated lesions are missed. In addition, this indicates that localization is most reliable as supporting region-level evidence for the classifier and LLM explanation modules, rather than as a standalone detector.
+\textbf{Localization is useful to detect TB, but should not be used to exclude TB.} Clinically, the high-precision, low-recall profile defines how localization should be used. A flagged lesion is relatively likely to be correct and thus warrants focused radiologist review, but the detector must not be used to exclude TB since most annotated lesions are missed. This indicates that localization is most reliable as supporting region-level evidence for the classifier and LLM explanation modules, rather than as a standalone detector.
 
 \subsection{Implementation Notes}
 
-In the implemented system, the localization model is run only on images classified as with TB by the classifier module (Section~\ref{sec:tb_classification}). The localization model is not run on images classified as non-TB. This follows the TBX11K reference, in which the image-classification result filters the localization module and detected TB areas are discarded when a CXR is classified as non-TB~\cite{liu2023tbx11k_pami}. This is based on the principle that lesion detection is meaningful only if a CXR indicates TB.
+Localization runs only on CXRs the classifier (Section~\ref{sec:tb_classification}) flags as TB. CXRs ruled non-TB skip localization, since any lesions found would contradict the classifier's decision.
 
 % ============================================================
 % MULTIMODAL EXPLANATION
@@ -467,7 +460,7 @@ In the implemented system, the localization model is run only on images classifi
 % ============================================================
 \section*{Declaration on Generative AI}
 
-Generative AI tools were used to assist in drafting and refining language during manuscript preparation. The conception of the research, development of methodology, and all conclusions are the work of the authors.
+Generative AI tools were used to assist in drafting and preparing this manuscript. The conception of the research, methodology, and conclusions are the work of the authors.
 
 % ============================================================
 % ACKNOWLEDGEMENTS
