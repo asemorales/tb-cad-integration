@@ -1,0 +1,12 @@
+# Reproducibility config for ResNet-18 (image classification).
+# Hyperparameters captured from notebooks/3_class_TB_Image_Classification.ipynb.
+# Executed via run.sh on the shared mlx engine (code/_mlx).
+model: resnet18              # mlx --model identifier
+mode: image_classification
+dataset: ../../../dataset/classification   # holds train/ val/ test/<class>/
+epochs: 100
+batch_size: 16
+image_size: [512, 512]
+device: cuda
+seed: 42
+checkpoint: best-validation   # mlx --use-best default (lowest val loss)

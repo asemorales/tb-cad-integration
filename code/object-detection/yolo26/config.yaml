@@ -1,0 +1,10 @@
+# Reproducibility config for YOLO26 (object detection, Ultralytics via mlx).
+model: yolo26              # mlx --model identifier
+mode: object_detection
+dataset: ../../../dataset/object-detection/dataset.yaml
+epochs: 100                   # confirmed from results/results.csv (100 epochs)
+batch_size: 16               # mlx default; not independently logged
+image_size: 512              # mlx default (height/width); not logged in results.csv
+device: cuda
+seed: 42
+checkpoint: best-validation   # ultralytics best.pt (--use-best default)

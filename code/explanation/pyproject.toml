@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tb-explain"
+version = "0.0.0"
+description = "Turns TB detector output (structured JSON) into a natural-language explanation via a fine-tuned LLM."
+requires-python = ">=3.10"
+readme = "README.md"
+dependencies = [
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+inference = [
+    "transformers>=4.43",
+    "torch>=2.0",
+    "accelerate>=0.30",
+]
+dev = [
+    "pytest>=7",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

@@ -1,0 +1,35 @@
+CLAUDE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Data and model artifacts (never commit)
+data/raw/
+data/processed/
+data/interim/
+models/
+checkpoints/
+*.ckpt
+*.safetensors
+*.bin
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

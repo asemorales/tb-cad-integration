@@ -1,0 +1,24 @@
+[project]
+name = "mlx"
+version = "0.1.0"
+description = "MLX: A command-line machine learning workflow runner."
+authors = [{ name = "Your Name", email = "raphael.alampay@gmail.com" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "onnxruntime",
+    "opencv-python",
+    "rich>=13.7.0",
+    "torch",
+    "torchvision",
+    "ultralytics @ git+https://github.com/ralampay/ultralytics"
+]
+
+[project.scripts]
+mlx = "mlx.cli:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
