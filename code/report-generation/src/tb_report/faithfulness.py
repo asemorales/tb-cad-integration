@@ -1,4 +1,4 @@
-"""Deterministic faithfulness check for generated explanations.
+"""Deterministic faithfulness check for generated reports.
 
 Faithfulness here means source-grounding: every clinical entity a summary
 states must be supported by the structured ``DetectorOutput`` it was generated
@@ -14,14 +14,14 @@ reported metric is the fraction of such cases.
 
 Usage as a library::
 
-    from tb_explain import check_faithfulness
+    from tb_report import check_faithfulness
     result = check_faithfulness(record, summary)
     result.is_faithful          # bool
     result.violations()         # list[str]
 
 Usage as a script (one JSON object per line, keys ``record`` and ``summary``)::
 
-    python -m tb_explain.faithfulness pairs.jsonl
+    python -m tb_report.faithfulness pairs.jsonl
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from tb_explain.schema import DetectorOutput
+from tb_report.schema import DetectorOutput
 
 # Radiographic findings and anatomical structures the detector never reports.
 # The schema has no field for any of these, so any mention is unsupported by

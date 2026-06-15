@@ -1,4 +1,4 @@
-"""Generate explanations for representative detector outputs and score faithfulness.
+"""Generate reports for representative detector outputs and score faithfulness.
 
 This runs the real Phi-3.5 prompt over a case mix mirroring the radiologist demo
 set (single active, single latent, bilateral active, mixed, central, two-region,
@@ -7,8 +7,8 @@ is image-independent (the model only sees the record), so a record set matching
 the real case distribution measures the same property as the full notebook set.
 """
 
-from tb_explain import check_faithfulness, evaluate, explain
-from tb_explain.schema import DetectorOutput, ImageClassification, Region
+from tb_report import check_faithfulness, evaluate, generate_report_llm
+from tb_report.schema import DetectorOutput, ImageClassification, Region
 
 TB = {"healthy": 0.03, "sick_non_tb": 0.07, "tb": 0.90}
 HEALTHY = {"healthy": 0.92, "sick_non_tb": 0.06, "tb": 0.02}
@@ -39,7 +39,7 @@ CASES = [
 
 pairs = []
 for name, record in CASES:
-    summary = explain(record)
+    summary = generate_report_llm(record)
     pairs.append((record, summary))
     result = check_faithfulness(record, summary)
     flag = "OK  " if result.is_faithful else "FLAG"

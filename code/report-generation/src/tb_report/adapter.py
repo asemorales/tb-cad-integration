@@ -1,7 +1,7 @@
 """Raw detector output -> DetectorOutput (the LLM input contract)."""
 
-from tb_explain.anatomy import BBox, bbox_to_location
-from tb_explain.schema import (
+from tb_report.anatomy import BBox, bbox_to_location
+from tb_report.schema import (
     ConfidenceBand,
     DetectorOutput,
     ImageClassification,

@@ -1,11 +1,11 @@
-"""Public entry point: detector output -> natural-language explanation."""
+"""Generative report generation: detector output -> radiology-style report via an LLM."""
 
 from __future__ import annotations
 
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from tb_explain.schema import DetectorOutput
+from tb_report.schema import DetectorOutput
 
 if TYPE_CHECKING:
     from transformers import Pipeline
@@ -66,8 +66,8 @@ def _load_pipeline() -> "Pipeline":
     )
 
 
-def explain(output: DetectorOutput, max_new_tokens: int = 256, **gen_kwargs) -> str:
-    """Return a natural-language explanation for a DetectorOutput.
+def generate_report_llm(output: DetectorOutput, max_new_tokens: int = 256, **gen_kwargs) -> str:
+    """Return an LLM-generated radiology-style report for a DetectorOutput.
 
     Lazy-loads the model on first call; subsequent calls reuse the cached pipeline.
     Extra generation arguments (for example ``do_sample=False`` for reproducible

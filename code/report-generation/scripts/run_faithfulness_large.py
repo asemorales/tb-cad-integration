@@ -15,8 +15,8 @@ import random
 import sys
 from collections import Counter
 
-from tb_explain import check_faithfulness, evaluate, explain
-from tb_explain.schema import DetectorOutput, ImageClassification, Region
+from tb_report import check_faithfulness, evaluate, generate_report_llm
+from tb_report.schema import DetectorOutput, ImageClassification, Region
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 100
 random.seed(20260612)
@@ -69,7 +69,7 @@ pairs = []
 with open("/tmp/faith_pairs.jsonl", "w") as fout:
     for i in range(N):
         rec = make_record()
-        summary = explain(rec, do_sample=False)
+        summary = generate_report_llm(rec, do_sample=False)
         pairs.append((rec, summary))
         res = check_faithfulness(rec, summary)
         fout.write(json.dumps({"record": json.loads(rec.model_dump_json()), "summary": summary}) + "\n")

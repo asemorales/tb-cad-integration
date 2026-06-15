@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Lightweight Tuberculosis Screening with Natural Language Explanations for Active Case Finding"
+title: "Lightweight Tuberculosis Screening Pipeline for Community-based Active Case Finding"
 type: software
 authors:
   - given-names: "Irish Danielle"
@@ -18,7 +18,7 @@ date-released: "2026"
 # repository-code: "https://github.com/<your-org>/tb-cxr-cad"   # set on release
 preferred-citation:
   type: article
-  title: "Lightweight Tuberculosis Screening with Natural Language Explanations for Active Case Finding"
+  title: "Lightweight Tuberculosis Screening Pipeline for Community-based Active Case Finding"
   authors:
     - given-names: "Irish Danielle"
       family-names: Morales

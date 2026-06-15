@@ -7,7 +7,7 @@ RegionType = Literal["active_tb", "latent_tb"]
 ConfidenceBand = Literal["low", "medium", "high"]
 # Column is the PATIENT's side (radiographic convention): "upper_right" is the
 # patient's right upper zone, i.e. the viewer's left. The detector must emit this
-# in patient-side coordinates; the verbalizer renders it verbatim without flipping.
+# in patient-side coordinates; report generation renders it verbatim without flipping.
 Location = Literal[
     "upper_left",
     "upper_center",

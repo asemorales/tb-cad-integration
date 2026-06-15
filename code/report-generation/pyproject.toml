@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tb-explain"
+name = "tb-report"
 version = "0.0.0"
-description = "Turns TB detector output (structured JSON) into a natural-language explanation via a fine-tuned LLM."
+description = "Radiology-style report generation from TB detector output (structured JSON): a template-based generator and an optional LLM generator."
 requires-python = ">=3.10"
 readme = "README.md"
 dependencies = [

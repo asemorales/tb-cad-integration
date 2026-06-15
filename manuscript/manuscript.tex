@@ -62,7 +62,7 @@
 
 \begin{document}
 
-\title{Lightweight Tuberculosis Screening with Natural Language Explanations for Active Case Finding}
+\title{Lightweight Tuberculosis Screening Pipeline for Community-based Active Case Finding}
 
 \IEEEoverridecommandlockouts
 \author{\IEEEauthorblockN{
@@ -78,7 +78,7 @@ Patricia Angela R. Abu~\orcidlink{0000-0002-8848-6644}}
 % ABSTRACT
 % ============================================================
 \begin{abstract} 
-Tuberculosis (TB) screening is widely done with computer-aided detection (CAD) systems. While TB CAD systems are highly accurate, community-based active case-finding (ACF) interventions face barriers in connectivity, compute, and interpretation. ACF often conducts high-volume screening in remote community locations where compute and connectivity are limited. The TB CAD system then reads each chest X-ray on-site for presumptive TB and outputs probability scores and visual overlays of abnormalities. However, these CAD outputs are primarily designed for radiologist reading, whereas ACF field teams often do not involve a radiologist and on-site readers without radiology training evaluate the CAD results. We present a TB screening pipeline that pairs lightweight classification and localization models with a natural-language description of model findings. For classification we introduce FlipR, a lightweight symmetry-gated network that achieves comparable performance to the strongest baselines despite using the fewest parameters. The classifier achieves performance above the World Health Organization's standards for specificity and sensitivity in TB CAD. For localization we introduce a custom backbone that increases accuracy of active TB lesions over base YOLO26. Results are output in natural language in line with radiologic report convention. The pipeline targets adult screening and is deliberately lightweight for deployment in resource-limited settings. However, the design and evaluation of the system was constrained by limited TB-specific samples in public datasets. Further work remains to evaluate deployment feasibility, detect specific radiographic findings, and evaluate natural language outputs through a radiologist reader study.
+Tuberculosis (TB) screening is widely done with computer-aided detection (CAD) systems. While TB CAD systems are highly accurate, community-based active case-finding (ACF) interventions face barriers in connectivity, compute, and interpretation. ACF often conducts high-volume screening in remote community locations where compute and connectivity are limited. The TB CAD system then reads each chest X-ray on-site for presumptive TB and outputs probability scores and visual overlays of abnormalities. However, these CAD outputs are primarily designed for radiologist reading, whereas ACF field teams often do not involve a radiologist and on-site readers without radiology training evaluate the CAD results. We present a TB screening pipeline that pairs lightweight classification and object detection models with a natural-language description of model findings. For classification we introduce FlipR, a lightweight symmetry-gated network that achieves comparable performance to the strongest baselines despite using the fewest parameters. The classifier achieves performance above the World Health Organization's standards for specificity and sensitivity in TB CAD. For object detection we introduce a custom backbone that increases accuracy of active TB lesions over base YOLO26. Findings are rendered as a deterministic, faithful-by-construction natural-language report following radiologic report convention, so the text asserts only what the models detected. The pipeline targets adult screening and is deliberately lightweight for deployment in resource-limited settings. However, the design and evaluation of the system was constrained by limited TB-specific samples in public datasets. Further work remains to evaluate deployment feasibility, detect specific radiographic findings, and evaluate natural language outputs through a radiologist reader study.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -115,13 +115,13 @@ While TB CAD systems are highly accurate, CAD workflow integration, local valida
 
 \textbf{Connectivity and compute are constrained in community sites.} ACF is often conducted in remote community sites, where connectivity may be unstable and laptops are used to run CAD software~\cite{stoptb_cad_guide}. Implementation studies in India and Vietnam document how workflow, connectivity, and interpretation conditions shape CAD deployment in the field~\cite{vijayan2023india_tb_cad, innes2023vietnam_tb_cad}.
 
-\textbf{CAD overlays are designed for radiologist readers, whereas ACF teams often do not have radiologists.} We review the six TB CAD products approved by WHO in 2025: qXR v4.0~\cite{qxr_docs}, CAD4TB v7~\cite{cad4tb_product}, Lunit INSIGHT CXR v3.1~\cite{lunit_product}, DrAid v2.4.4--6~\cite{draid_product}, Genki Edge v3.4.2~\cite{genki_product}, and InferRead DR Chest v1.0.1.1~\cite{inferread_product}~\cite{who_cad_approval_2025}. All provide visual localization through a boxed region, outline, or heatmap, but no product is known to describe its findings in natural language. CAD overlays are also found to overlap poorly with expert-identified regions and do not convey the contextual reasoning used during diagnosis~\cite{chen2022xai_human_centered}. A TB CAD acceptability study found that some users wanted to understand why the model reached its conclusions~\cite{hua2025qxr_acceptability}, and textual descriptions have been proposed as a more clinically meaningful complement to image markup~\cite{ihongbe2024xai_cxr, borys2023xai_beyond_saliency, siemens_llm_cxr_2023, gaube2024care_explain}. This presents unique constraints to ACF, which is often carried out by mobile field teams that include a radiographer but often no radiologist on-site~\cite{find_cad_landscape}. Despite chest X-ray interpretation falling outside the radiographer's scope of practice, the radiographer in ACF decides whether to refer a patient for confirmatory testing using the radiograph, the patient's symptoms, and the CAD output~\cite{stoptb_cad_guide}.
+\textbf{CAD overlays are designed for radiologist readers, whereas ACF teams often do not have radiologists.} We review the six TB CAD products approved by WHO in 2025: qXR v4.0~\cite{qxr_docs}, CAD4TB v7~\cite{cad4tb_product}, Lunit INSIGHT CXR v3.1~\cite{lunit_product}, DrAid v2.4.4--6~\cite{draid_product}, Genki Edge v3.4.2~\cite{genki_product}, and InferRead DR Chest v1.0.1.1~\cite{inferread_product}~\cite{who_cad_approval_2025}. All deliver TB screening results as a probability score with visual localization through a boxed region, outline, or heatmap. Some products additionally generate broader radiology reports spanning many chest findings~\cite{draid_product, qxr_docs}, but such reports are produced for radiologist reading rather than for the non-radiologist readers in ACF, and the TB screening output itself remains a score and an overlay. CAD overlays are also found to overlap poorly with expert-identified regions and do not convey the contextual reasoning used during diagnosis~\cite{chen2022xai_human_centered}. A TB CAD acceptability study found that some users wanted to understand why the model reached its conclusions~\cite{hua2025qxr_acceptability}, and textual descriptions have been proposed as a more clinically meaningful complement to image markup~\cite{ihongbe2024xai_cxr, borys2023xai_beyond_saliency, siemens_llm_cxr_2023, gaube2024care_explain}. This presents unique constraints to ACF, which is often carried out by mobile field teams that include a radiographer but often no radiologist on-site~\cite{find_cad_landscape}. Despite chest X-ray interpretation falling outside the radiographer's scope of practice, the radiographer in ACF decides whether to refer a patient for confirmatory testing using the radiograph, the patient's symptoms, and the CAD output~\cite{stoptb_cad_guide}.
 
 \subsection{Related Work}
 
 TB CAD models with lightweight memory and compute have been explored in previous studies, from LightTBNet at under a million parameters~\cite{capellan2023lighttbnet} to lightweight hybrid networks~\cite{owda2025hybrid_tb}, building on edge-deployed chest X-ray models for related conditions~\cite{benmalek2025edge, chauhan2024covid_edge}. Some existing commercial CAD systems require a dedicated CAD box or separate CAD laptop to support offline screening due to compute constraints~\cite{stoptb_cad_guide}.
 
-Related literature has also explored models to explain findings in natural language, although no deployed system or commercial product implements them yet. In a research prototype, Siemens Healthineers paired a combined classification-localization model~\cite{ghesu2022ssl_medical} with a domain-adapted LLM to generate CXR findings~\cite{siemens_llm_cxr_2023}. General medical vision-language models such as LLaVA-Med~\cite{li2023llava_med} and CXR-LLaVA~\cite{lee2024cxr_llava} demonstrate image-conditioned radiology text generation, and recent surveys catalogue the rapid growth of vision-language models for medical report generation~\cite{bazi2024vlm_review}. However, most work remains in general chest X-ray detection, with few specific to tuberculosis.
+Related literature has also explored models that generate natural-language descriptions of findings. In a research prototype, Siemens Healthineers paired a combined classification-localization model~\cite{ghesu2022ssl_medical} with a domain-adapted LLM to generate CXR findings~\cite{siemens_llm_cxr_2023}. General medical vision-language models such as LLaVA-Med~\cite{li2023llava_med} and CXR-LLaVA~\cite{lee2024cxr_llava} demonstrate image-conditioned radiology text generation, and recent surveys catalogue the rapid growth of vision-language models for medical report generation~\cite{bazi2024vlm_review}. However, most work remains in general chest X-ray detection, with few specific to tuberculosis.
 
 % ============================================================
 % II. MATERIALS AND METHODS
@@ -131,11 +131,11 @@ Related literature has also explored models to explain findings in natural langu
 \begin{figure}[!t]
     \centering
     \includegraphics[width=\linewidth]{../figures/pipeline.png}
-    \caption{Overview of the TB CAD pipeline.}
+    \caption{Overview of the TB CAD pipeline: image classification, TB lesion detection, and report generation.}
     \label{fig:pipeline}
 \end{figure}
 
-This paper presents a lightweight TB screening pipeline that describes model findings in natural language, as shown in Figure \ref{fig:pipeline}. A CXR (DICOM or standard image format) is ingested from the screening unit's X-ray or uploaded directly, then scored by the TB classification module. For images flagged as TB, localization (object detection) detects active and latent TB regions. The classification and localization outputs are passed to the explanation module, which generates a natural-language description of the findings based on radiologic report convention. All three stages are lightweight, for screening where no radiologist and often no GPU is present.
+This paper presents a lightweight TB screening pipeline that describes model findings in natural language, as shown in Figure \ref{fig:pipeline}. A CXR (DICOM or standard image format) is ingested from the screening unit's X-ray or uploaded directly, then scored by the TB classification module. For images flagged as TB, the object detection module identifies active and latent TB regions. The classification and detection outputs are passed to the report generation module, which produces a natural-language report of the findings based on radiologic report convention. All three stages are lightweight, for screening where no radiologist and often no GPU is present.
 
 % ============================================================
 % TUBERCULOSIS CLASSIFICATION
@@ -147,7 +147,7 @@ The TB classification module flags each CXR as either healthy, sick non-TB, or T
 
 \subsection{Dataset}
 
-Classification and localization models are trained on a simplified redistribution\footnote{\url{https://www.kaggle.com/datasets/vbookshelf/tbx11k-simplified}} of TBX11K~\cite{liu2020tbx11k}, a public CXR dataset with image-level labels (\textit{healthy}, \textit{sick non-TB}, \textit{TB}) and bounding-box-level labels (\textit{active-TB}, \textit{latent-TB}).
+Classification and object detection models are trained on a simplified redistribution\footnote{\url{https://www.kaggle.com/datasets/vbookshelf/tbx11k-simplified}} of TBX11K~\cite{liu2020tbx11k}, a public CXR dataset with image-level labels (\textit{healthy}, \textit{sick non-TB}, \textit{TB}) and bounding-box-level labels (\textit{active-TB}, \textit{latent-TB}).
 
 TBX11K is selected because it is the largest public TB CXR dataset with a TB-specific sample large enough to train from scratch, expert bounding-box annotations, a sick non-TB class, and a demographic and class composition that reflect real-world clinical settings~\cite{liu2023tbx11k_pami}. TBX11K notes per-image patient age and sex, with most TB cases aged 20 to 60 and a male majority (72\% of TB X-rays), which is representative of the general population and consistent with real-world clinical scenarios~\cite{liu2023tbx11k_pami}.
 
@@ -251,16 +251,16 @@ All models display high specificity and lower sensitivity, consistent with resul
 The top four models (FlipR, EfficientNet-B0, MobileNetV3-Large, Drax-MobileNetV3-Large) match or exceed every larger model in accuracy and F1 with lower parameters. Due to a modest TBX11K training set, a minority TB class, and no class-imbalance handling, larger networks appear to overfit the majority healthy and sick non-TB classes rather than learn discriminative TB features. TB screening also runs in resource-limited settings often without a dedicated GPU, so a lightweight model is preferable in deployment.
 
 % ============================================================
-% TUBERCULOSIS LOCALIZATION
+% TUBERCULOSIS LESION DETECTION
 % ============================================================
-\section{Tuberculosis Localization}
+\section{Tuberculosis Lesion Detection}
 \label{sec:tb_localization}
 
-The localization module marks TB regions on the radiograph as bounding boxes, supplying the region-level evidence that the explanation module later verbalizes.
+We frame TB lesion detection as an object detection task: the module localizes each TB region on the radiograph as a bounding box and classifies it, supplying the region-level evidence that the report generation module later renders as text.
 
 \subsection{Dataset}
 
-Localization uses the TBX11K bounding-box annotations, with each region labeled active TB or latent TB. Dataset composition is shown in Table \ref{tab:localization_composition}.
+Object detection uses the TBX11K bounding-box annotations, with each region labeled active TB or latent TB. Dataset composition is shown in Table \ref{tab:localization_composition}.
 
 Active TB denotes ongoing, transmissible infection requiring treatment. Latent TB denotes prior, inactive infection that is not contagious but may reactivate. As Figure~\ref{fig:pipeline} shows, active TB is more visually salient and latent TB is more subtle. A CXR with an image-level label of TB may contain bounding box labels of only active-TB lesions ($630$ images), only latent-TB lesions ($139$ images), or both ($30$ images). This composition is consistent with real-world conditions~\cite{liu2020tbx11k}.
 
@@ -270,7 +270,7 @@ Differentiation between active and latent TB is relatively understudied in TB CA
 \renewcommand{\arraystretch}{1.2}
 \centering
 \begin{threeparttable}
-\caption{TBX11K Dataset Composition (Bounding Box Labels) for Localization}
+\caption{TBX11K Dataset Composition (Bounding Box Labels) for Lesion Detection}
 \label{tab:localization_composition}
 \small
 \begin{tabularx}{\columnwidth}{@{}l *{3}{C}@{}}
@@ -292,11 +292,11 @@ Total boxes & 902 & 309 & 1,211 \\
 
 \subsection{Model Architecture}
 
-We evaluate YOLO26 and a custom variant in which the detector's default feature extractor is replaced by the DraxNet backbone used in classification. The detection head and training protocol are unchanged, isolating the backbone's effect on localization.
+We evaluate YOLO26 and a custom variant in which the detector's default feature extractor is replaced by the DraxNet backbone used in classification. The detection head and training protocol are unchanged, isolating the backbone's effect on detection.
 
 \subsection{Model Training}
 
-Localization uses the same training configuration as the classification models (Section~\ref{sec:tb_classification}). As in classification, the best checkpoint (selected by mAP) is retained and used for evaluation.
+Object detection uses the same training configuration as the classification models (Section~\ref{sec:tb_classification}). As in classification, the best checkpoint (selected by mAP) is retained and used for evaluation.
 
 \subsection{Results}
 
@@ -304,10 +304,10 @@ Localization uses the same training configuration as the classification models (
 \renewcommand{\arraystretch}{1.2}
 \centering
 \begin{threeparttable}
-\caption{Tuberculosis Localization Results}
+\caption{Tuberculosis Lesion Detection Results}
 \label{tab:detection_results}
 \small
-\begin{tabular}{@{}l l c c@{}}
+\begin{tabularx}{\columnwidth}{@{}l l C C@{}}
 \toprule
 \textbf{Model} & \textbf{Class} & \textbf{$\mathrm{mAP}_{50}$} & \textbf{$\mathrm{mAP}_{50\text{-}95}$} \\
 \midrule
@@ -317,7 +317,7 @@ YOLO26                    & LTB & \textbf{0.1070} & \textbf{0.0410} \\
 YOLO26 + DraxNet & ATB & \textbf{0.5865} & \textbf{0.2748} \\
 YOLO26 + DraxNet & LTB & 0.1017 & 0.0310 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item ATB = active TB; LTB = latent TB.
@@ -325,7 +325,7 @@ YOLO26 + DraxNet & LTB & 0.1017 & 0.0310 \\
 \end{threeparttable}
 \end{table}
 
-Localization results are reported in Table~\ref{tab:detection_results}.
+Detection results are reported in Table~\ref{tab:detection_results}.
 
 
 \textbf{Active TB is more likely to be detected than latent TB.}
@@ -343,53 +343,53 @@ YOLO26 with the DraxNet backbone raises active-TB $\mathrm{mAP}_{50}$ from $0.45
 \subfloat{\includegraphics[width=0.48\columnwidth]{../figures/pr_draxnet.pdf}}
 \hfil
 \subfloat{\includegraphics[width=0.48\columnwidth]{../figures/f1_draxnet.pdf}}
-\caption{Localization precision-recall (left) and F1-confidence (right) curves for YOLO26 (top) and YOLO26 with the DraxNet backbone (bottom). Both sustain high precision while recall saturates near $0.26$, and the latent-TB curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector.}
+\caption{Detection precision-recall (left) and F1-confidence (right) curves for YOLO26 (top) and YOLO26 with the DraxNet backbone (bottom). Both sustain high precision while recall saturates near $0.26$, and the latent-TB curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector.}
 \label{fig:detection_curves}
 \end{figure}
 
 \textbf{Recall, not precision, is the bottleneck.}
 Both detectors localize confidently but find only about a quarter of the annotated TB regions. Figure~\ref{fig:detection_curves} shows precision staying high while recall saturates near $0.26$, and the latent-TB curve collapsing at low confidence for both detectors.
 
-\textbf{Localization is useful to confirm (rule-in) TB, but not to rule it out.} The high-precision, low-recall profile indicates that a flagged lesion is likely correct and warrants focused radiologist review, but the model cannot reliably exclude TB because most annotated lesions are missed. Localization is therefore most reliable as supporting region-level evidence for the classifier and explanation modules, rather than as a standalone detector for TB. Clinicians using the model may reliably use it for rule-in diagnosis, not for rule-out diagnosis.
+\textbf{Localization is useful to confirm (rule-in) TB, but not to rule it out.} The high-precision, low-recall profile indicates that a flagged lesion is likely correct and warrants focused radiologist review, but the model cannot reliably exclude TB because most annotated lesions are missed. Localization is therefore most reliable as supporting region-level evidence for the classifier and report generation modules, rather than as a standalone detector for TB. Clinicians using the model may reliably use it for rule-in diagnosis, not for rule-out diagnosis.
 
 % ============================================================
-% MULTIMODAL EXPLANATION
+% REPORT GENERATION
 % ============================================================
-\section{Natural-Language Explanation}
+\section{Report Generation}
 \label{sec:explanation}
 
-The explanation module turns the detector's output into a structured natural-language summary a reader can act on without interpreting a boxed region or heatmap. Example outputs are shown in Figures~\ref{fig:pipeline} and~\ref{fig:explanation_gallery}.
+The report generation module turns the detector's output into a structured radiology-style report a reader can act on without interpreting a boxed region or heatmap. Example outputs are shown in Figures~\ref{fig:pipeline} and~\ref{fig:explanation_gallery}.
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=\textwidth]{../figures/cxr_explanation_gallery.png}
-\caption{Example explanation outputs on TBX11K scans.}
+\includegraphics[width=\textwidth]{../figures/cxr_report_gallery.png}
+\caption{Example generated reports on TBX11K scans.}
 \label{fig:explanation_gallery}
 \end{figure*}
 
-The module follows the two-stage detector-to-text decomposition of Danu et al.~\cite{siemens_llm_cxr_2023}. However, because the detector here emits a closed TB vocabulary rather than open findings, we replace their proprietary detector and fine-tuned language model with the public models of this paper and a deterministic module, reserving a generative model for future work that uses specific radiographic findings. For current use, the deterministic explanation suffices and does not require significant additional memory or compute for resource-constrained settings.
+The module follows the two-stage detector-to-text decomposition of Danu et al.~\cite{siemens_llm_cxr_2023}. However, because the detector here emits a closed TB vocabulary rather than open findings, we replace their proprietary detector and fine-tuned language model with the public models of this paper and a deterministic module, reserving a generative model for future work that uses specific radiographic findings. For current use, template-based report generation suffices and does not require significant additional memory or compute for resource-constrained settings.
 
-The module has two stages: an adapter that converts raw detector output into a validated structured record, and a deterministic verbalizer that renders that record as text. The second stage receives only a structured record of what the classification and localization modules produced. This was designed to prioritize faithfulness to model findings, as image-conditioned vision-language models such as CXR-LLaVA~\cite{lee2024cxr_llava} and LLaVA-Med~\cite{li2023llava_med}, as well as related work using LLMs~\cite{siemens_llm_cxr_2023} may report findings the model detector never flagged.
+The module has two stages: an adapter that converts raw detector output into a validated structured record, and a template-based report generator that renders that record as text. The second stage receives only a structured record of what the classification and object detection modules produced. This was designed to prioritize faithfulness to model findings, as image-conditioned vision-language models such as CXR-LLaVA~\cite{lee2024cxr_llava} and LLaVA-Med~\cite{li2023llava_med}, as well as related work using LLMs~\cite{siemens_llm_cxr_2023} may report findings the model detector never flagged.
 
 \subsection{Structured Adapter}
 
-The adapter maps classification and localization output to a fixed schema with a small, closed vocabulary. The image-level field carries the predicted label, the argmax over \textit{healthy}, \textit{sick non-TB}, and \textit{TB}, together with its class probabilities. Each detected region carries three fields: its type (\textit{active TB} or \textit{latent TB}), a confidence band (\textit{low}, \textit{medium}, or \textit{high}, thresholded at $0.5$ and $0.8$ on the detection score), and a location. The location is assigned by mapping the bounding-box centroid to one of nine cells in a $3\times3$ grid over the image (upper, middle, or lower row by left, center, or right column). An image with no detections yields an empty region list. The schema is validated before generation, so the verbalizer always receives well-formed input drawn from this vocabulary. The record states the type and coarse location of each region but no finer radiographic finding, because the detector labels regions only as active or latent TB.
+The adapter maps classification and detection output to a fixed schema with a small, closed vocabulary. The image-level field carries the predicted label, the argmax over \textit{healthy}, \textit{sick non-TB}, and \textit{TB}, together with its class probabilities. Each detected region carries three fields: its type (\textit{active TB} or \textit{latent TB}), a confidence band (\textit{low}, \textit{medium}, or \textit{high}, thresholded at $0.5$ and $0.8$ on the detection score), and a location. The location is assigned by mapping the bounding-box centroid to one of nine cells in a $3\times3$ grid over the image (upper, middle, or lower row by left, center, or right column). An image with no detections yields an empty region list. The schema is validated before generation, so the report generator always receives well-formed input drawn from this vocabulary. The record states the type and coarse location of each region but no finer radiographic finding, because the detector labels regions only as active or latent TB.
 
 All images are posteroanterior (PA) frontal scans. Hence, the standard radiological laterality convention is used, wherein the patient's right side appears on the image's left side and vice versa. For example, a lesion present in the image's upper left corner, is reported as an upper right lesion.
 
-\subsection{Deterministic Verbalization}
+\subsection{Template-Based Report Generation}
 
-The verbalization stage is a structured template over the closed schema. It renders the record as a short summary in three labeled sections, mirroring the findings-to-impression structure of a radiology report~\cite{zhang2024llm_impressions}: a numbered \textsc{findings} list with one TB region per line including lesion type, model confidence band, and lesion zone, an \textsc{impression} stating the screening result in clinical wording, and a \textsc{recommendation} based on the predicted class, such as referral for bacteriological confirmation when TB is indicated.
+Template-based report generation is a structured template over the closed schema. It renders the record as a short report in three labeled sections, mirroring the findings-to-impression structure of a radiology report~\cite{zhang2024llm_impressions}: a numbered \textsc{findings} list with one TB region per line including lesion type, model confidence band, and lesion zone, an \textsc{impression} stating the screening result in clinical wording, and a \textsc{recommendation} based on the predicted class, such as referral for bacteriological confirmation when TB is indicated.
 
-The summary describes only the detected TB regions and does not assess specific radiographic findings or cardiac, pleural, and skeletal observations. Due to lack of data, this is reserved for future work.
+The report describes only the detected TB regions and does not assess specific radiographic findings or cardiac, pleural, and skeletal observations. Due to lack of data, this is reserved for future work.
 
-We chose a template over a generative model after evaluating both. An instruction-tuned language-model verbalizer (Phi-3.5-mini-instruct~\cite{abdin2024phi3}, run image-blind on the same record) was developed alongside this work, but for the current closed vocabulary it was found to offer identical output with no advantage. The output is a short, fixed-format report with one line per region, so a template matches it on faithfulness, readability, and the ordering of findings while removing any possibility of hallucination and model inference cost, an advantage in the resource-limited settings this pipeline targets. A generative model is needed only for future work when the detector reports a richer, open set of interacting findings.
+We chose a template over a generative model after evaluating both. An instruction-tuned language-model report generator (Phi-3.5-mini-instruct~\cite{abdin2024phi3}, run image-blind on the same record) was developed alongside this work, but for the current closed vocabulary it was found to offer identical output with no advantage. The output is a short, fixed-format report with one line per region, so a template matches it on faithfulness, readability, and the ordering of findings while removing any possibility of hallucination and model inference cost, an advantage in the resource-limited settings this pipeline targets. A generative model is needed only for future work when the detector reports a richer, open set of interacting findings.
 
 \subsection{Faithfulness by Construction}
 
-By design, the explanation module is faithful by construction, defined as the generated text asserting nothing not present in the structured record. This follows the faithfulness-versus-factuality distinction drawn for abstractive summarization~\cite{maynez2020faithfulness} and data-to-text evaluation~\cite{dhingra2019parent}, under which a generation is faithful if every entity it states is supported by the source, independent of whether the source is itself correct.
+By design, report generation is faithful by construction, defined as the generated text asserting nothing not present in the structured record. This follows the faithfulness-versus-factuality distinction drawn for abstractive summarization~\cite{maynez2020faithfulness} and data-to-text evaluation~\cite{dhingra2019parent}, under which a generation is faithful if every entity it states is supported by the source, independent of whether the source is itself correct.
 
-In previous experiments using Phi-3.5-mini-instruct for explanation, we evaluated the result for faithfulness with a deterministic verifier that parses a summary for schema entities and flagging any the record does not contain: region type, location, or laterality absent from the record, a predicted label different from the record's, or an invented probability. The verifier follows an established approach in data-to-text generation, extracting the facts a generation asserts and checking them against the source records~\cite{wiseman2017challenges}, and relates to the slot-error and semantic-accuracy metrics from dialogue generation that count output content not licensed by the input meaning representation~\cite{wen2015sclstm, dusek2020semantic}. However, where those methods train an information-extraction or natural-language-inference model because the target text is open, the closed schema makes an exact deterministic match sufficient. Run over the full single-region surface of the schema, every combination of the two region types, three confidence bands, and nine zones together with the empty-region case for each class, the verifier reported $100\%$ faithfulness. However, since the generative model approach does not provide additional benefit over a templated approach, the generative model is dropped to avoid hallucinations and reduce compute.
+In previous experiments using Phi-3.5-mini-instruct for report generation, we evaluated the result for faithfulness with a deterministic verifier that parses a report for schema entities and flagging any the record does not contain: region type, location, or laterality absent from the record, a predicted label different from the record's, or an invented probability. The verifier follows an established approach in data-to-text generation, extracting the facts a generation asserts and checking them against the source records~\cite{wiseman2017challenges}, and relates to the slot-error and semantic-accuracy metrics from dialogue generation that count output content not licensed by the input meaning representation~\cite{wen2015sclstm, dusek2020semantic}. However, where those methods train an information-extraction or natural-language-inference model because the target text is open, the closed schema makes an exact deterministic match sufficient. Run over the full single-region surface of the schema, every combination of the two region types, three confidence bands, and nine zones together with the empty-region case for each class, the verifier reported $100\%$ faithfulness. However, since the generative approach does not provide additional benefit over a template-based approach, the generative model is dropped to avoid hallucinations and reduce compute.
 
 % ============================================================
 % DISCUSSION
@@ -404,9 +404,9 @@ Our lightweight models fall at the parameter scale shown in related literature t
 
 \subsection{Limitations}
 
-TB-specific samples are limited in public datasets. As of writing, TBX11K is the largest public chest X-ray dataset for tuberculosis with labeled bounding boxes, yet its TB subset remains small at 799 TB images and 1,211 TB lesion boxes. While general chest X-ray datasets exist, of these, TB-positive samples are few and insufficient to train from scratch. No public dataset contains TB-specific radiographs with reference radiographic reports, which is what a measurement of clinical correctness would require. This scarcity constrained the development and evaluation of the explanation module for clinical correctness.
+TB-specific samples are limited in public datasets. As of writing, TBX11K is the largest public chest X-ray dataset for tuberculosis with labeled bounding boxes, yet its TB subset remains small at 799 TB images and 1,211 TB lesion boxes. While general chest X-ray datasets exist, of these, TB-positive samples are few and insufficient to train from scratch. No public dataset contains TB-specific radiographs with reference radiographic reports, which is what a measurement of clinical correctness would require. This scarcity constrained the development and evaluation of report generation for clinical correctness.
 
-Although the explanation module is faithful by construction, faithfulness to the detector is not clinical correctness. A summary that faithfully restates an incorrect detection is still wrong, and only reference-based or reader evaluation can report this. However, due to the lack of a TB-specific reference dataset, this is left to future work.
+Although report generation is faithful by construction, faithfulness to the detector is not clinical correctness. A report that faithfully restates an incorrect detection is still wrong, and only reference-based or reader evaluation can report this. However, due to the lack of a TB-specific reference dataset, this is left to future work.
 
 The system's scope is limited to screening of non-pediatric patients since the radiographic presentation of pulmonary TB is age-dependent: adult reactivation tuberculosis appears in the upper lung zones, whereas pediatric primary tuberculosis appears in the lower lung zones. Hence, detection patterns learned from a predominantly adult distribution do not transfer to children. This is consistent with the WHO endorsement of CAD as a human-reader alternative only for patients aged 15 years and older~\cite{who_cad_policy_2021}. 
 
@@ -414,16 +414,16 @@ The system's scope is limited to screening of non-pediatric patients since the r
 
 Future work seeks to evaluate the deployment efficiency of the pipeline in real-world use to benchmark inference latency, memory, and FLOPs on a target device.
 
-Detection of full radiographic findings, such as cardiac size, pleural fluid, or non-TB abnormalities, as well as cardiac, pleural, and skeletal structures, are reserved for future work given additional data. Specific findings are more clinically meaningful for interpretation of the radiologic report, aligned with human reader interpretation of findings. This would also warrant use of a generative language model over a structured template for generated explanations, since synthesizing findings into a coherent report is no longer a fixed-format substitution but a genuine generation problem. This is demonstrated by recent chest X-ray systems that aggregate region-level findings into a report with an LLM~\cite{siemens_llm_cxr_2023, noh2026hybrid}.
+Detection of full radiographic findings, such as cardiac size, pleural fluid, or non-TB abnormalities, as well as cardiac, pleural, and skeletal structures, are reserved for future work given additional data. Specific findings are more clinically meaningful for interpretation of the radiologic report, aligned with human reader interpretation of findings. This would also warrant use of a generative language model over a structured template for report generation, since synthesizing findings into a coherent report is no longer a fixed-format substitution but a genuine generation problem. This is demonstrated by recent chest X-ray systems that aggregate region-level findings into a report with an LLM~\cite{siemens_llm_cxr_2023, noh2026hybrid}.
 
-A reader study with radiologists and non-radiologist screeners is also recommended to evaluate the clinical correctness and coherence of the model-generated natural language findings, particularly in comparison to human reader reports.
+A reader study with radiologists and non-radiologist screeners is also recommended to evaluate the clinical correctness and coherence of the model-generated reports, particularly in comparison to human reader reports.
 
 % ============================================================
 % CONCLUSION
 % ============================================================
 \section{Conclusion}
 
-TB CAD systems are highly accurate, however challenges remain in integration for use in community ACF with limited connectivity, compute, and with no radiologist present. This paper presented a lightweight TB screening pipeline that pairs lightweight detection models with a natural-language explanation of findings. The custom classifier, FlipR, achieves similar accuracy and F1 with the strongest baselines using the fewest parameters. The custom localization model, DraxNet, improves active TB detection over YOLO26. The explanation module provides findings in natural language for interpretation of ACF field teams and radiographers for patient referral for presumptive TB. TB-specific samples were found to be highly limited in public datasets, which constrained the design and evaluation of components. A full evaluation of deployment feasibility, extended radiographic findings, and a reader study with radiologists is left to future work.
+TB CAD systems are highly accurate, however challenges remain in integration for use in community ACF with limited connectivity, compute, and with no radiologist present. This paper presented a lightweight TB screening pipeline that pairs lightweight detection models with deterministic, faithful-by-construction natural-language report generation of findings. The custom classifier, FlipR, achieves similar accuracy and F1 with the strongest baselines using the fewest parameters. The custom object detection model, DraxNet, improves active TB detection over YOLO26. Report generation provides findings in natural language for interpretation of ACF field teams and radiographers for patient referral for presumptive TB. TB-specific samples were found to be highly limited in public datasets, which constrained the design and evaluation of components. A full evaluation of deployment feasibility, extended radiographic findings, and a reader study with radiologists is left to future work.
 
 % ============================================================
 % ACKNOWLEDGMENTS
@@ -453,7 +453,7 @@ Generative AI tools were used to assist in drafting and preparing this manuscrip
 \caption{FlipR Architecture (ResNet-18 Truncated to Three Stages)}
 \label{tab:arch_flipr}
 \footnotesize
-\begin{tabular}{@{}l c r@{}}
+\begin{tabularx}{\columnwidth}{@{}X c r@{}}
 \toprule
 \textbf{Stage} & \textbf{Output} & \textbf{Params} \\
 \midrule
@@ -466,7 +466,7 @@ Head (avg-pool, FC 256$\to$3) & 3 & 771 \\
 \midrule
 \textbf{Total} & & \textbf{2,783,684} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{threeparttable}
 \end{table}
 
@@ -477,7 +477,7 @@ Head (avg-pool, FC 256$\to$3) & 3 & 771 \\
 \caption{DraxNet Architecture (ResNet-18, DraxBlock in Stage 4)}
 \label{tab:arch_draxnet}
 \footnotesize
-\begin{tabular}{@{}l c r@{}}
+\begin{tabularx}{\columnwidth}{@{}X c r@{}}
 \toprule
 \textbf{Stage} & \textbf{Output} & \textbf{Params} \\
 \midrule
@@ -490,7 +490,7 @@ Head (avg-pool, FC 512$\to$3) & 3 & 1,539 \\
 \midrule
 \textbf{Total} & & \textbf{16,483,395} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{threeparttable}
 \end{table}
 
@@ -501,7 +501,7 @@ Head (avg-pool, FC 512$\to$3) & 3 & 1,539 \\
 \caption{Drax-MobileNetV3-Large Architecture}
 \label{tab:arch_draxmobilenet}
 \footnotesize
-\begin{tabular}{@{}l c r@{}}
+\begin{tabularx}{\columnwidth}{@{}X c r@{}}
 \toprule
 \textbf{Stage} & \textbf{Output} & \textbf{Params} \\
 \midrule
@@ -511,7 +511,7 @@ Head (avg-pool, classifier 960$\to$1280$\to$3) & 3 & 1,233,923 \\
 \midrule
 \textbf{Total} & & \textbf{4,781,075} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{threeparttable}
 \end{table}
 

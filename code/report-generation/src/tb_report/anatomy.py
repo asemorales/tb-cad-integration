@@ -7,7 +7,7 @@ patient's side, not the image side: image-left maps to "right" and image-right
 maps to "left". This assumes a properly oriented frontal projection.
 """
 
-from tb_explain.schema import Location
+from tb_report.schema import Location
 
 BBox = tuple[float, float, float, float]
 

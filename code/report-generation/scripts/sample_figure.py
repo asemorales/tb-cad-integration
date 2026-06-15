@@ -1,7 +1,7 @@
-"""Generate one explanation for the figure's two-box record (greedy, reproducible)."""
+"""Generate one report for the figure's two-box record (template-based, deterministic)."""
 
-from tb_explain import check_faithfulness, explain
-from tb_explain.schema import DetectorOutput, ImageClassification, Region
+from tb_report import check_faithfulness, generate_report
+from tb_report.schema import DetectorOutput, ImageClassification, Region
 
 record = DetectorOutput(
     image_classification=ImageClassification(
@@ -14,9 +14,9 @@ record = DetectorOutput(
     ],
 )
 
-summary = explain(record, do_sample=False)
-res = check_faithfulness(record, summary)
+report = generate_report(record)
+res = check_faithfulness(record, report)
 
 print("RECORD :", record.model_dump_json())
-print("SUMMARY:", summary)
+print("REPORT :", report)
 print("FAITHFUL:", res.is_faithful, res.violations())
