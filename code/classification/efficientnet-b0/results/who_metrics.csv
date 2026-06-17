@@ -1,0 +1,10 @@
+metric,value
+auc_tb,0.999481
+pauc_spec_40_60,1.000000
+spec_at_90_sens,1.000000
+sens_at_operating_point,0.916667
+threshold_at_90_sens,0.947107
+prevalence,0.095238
+n_positive,120.000000
+n_negative,1140.000000
+n_total,1260.000000
