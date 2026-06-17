@@ -430,7 +430,48 @@ In previous experiments using Phi-3.5-mini-instruct for report generation, we ev
 
 Laptops are typically used to run CAD systems in community-based ACF, resulting in limited compute. CAD is also increasingly deployed offline where network connectivity is unreliable or absent~\cite{stoptb_ultraportable, stoptb_cad_guide}. This mode already operates at scale, with more than 430,000 people screened by ultraportable X-ray and CAD between 2021 and 2023~\cite{min2025scanned}. Models for community-based ACF must be able to run locally on a CPU, without a dedicated GPU or a network connection.
 
-Our lightweight models fall at the parameter scale shown in related literature to run on this class of hardware. Lightweight chest X-ray networks have been deployed on edge devices and CPUs with low latency, including ResNet-18, MobileNet, and EfficientNet-B0 on an embedded board~\cite{benmalek2025edge} and a compact classifier on edge devices~\cite{chauhan2024covid_edge}, and for TB specifically LightTBNet reports rapid, low-memory prediction designed for embedded use~\cite{capellan2023lighttbnet}. FlipR ($2.8$M parameters), Drax-MobileNetV3-Large ($4.8$M), EfficientNet-B0 ($4.0$M), and MobileNetV3-Large ($4.2$M) are at or below the size of those deployed networks, so they should run on the same devices. Their multiply-add cost at the $512\times512$ input ranges from $1.2$G for MobileNetV3-Large to $7.4$G for FlipR, so the depthwise-separable backbones carry the smallest compute footprint as well as a small memory footprint, while FlipR trades higher compute for the fewest parameters. However, we did not conduct evaluation in real-world deployment to measure on-device latency or memory, and this remains future work.
+Our lightweight models fall at the parameter scale shown in related literature to run on this class of hardware. Lightweight chest X-ray networks have been deployed on edge devices and CPUs with low latency, including ResNet-18, MobileNet, and EfficientNet-B0 on an embedded board~\cite{benmalek2025edge} and a compact classifier on edge devices~\cite{chauhan2024covid_edge}, and for TB specifically LightTBNet reports rapid, low-memory prediction designed for embedded use~\cite{capellan2023lighttbnet}. FlipR ($2.8$M parameters), Drax-MobileNetV3-Large ($4.8$M), EfficientNet-B0 ($4.0$M), and MobileNetV3-Large ($4.2$M) are at or below the size of those deployed networks, so they should run on the same devices. Their multiply-add cost at the $512\times512$ input ranges from $1.2$G for MobileNetV3-Large to $7.4$G for FlipR, so the depthwise-separable backbones carry the smallest compute footprint as well as a small memory footprint, while FlipR trades higher compute for the fewest parameters. To test these expectations directly, we benchmarked every model on a CPU-only host. Table~\ref{tab:ondevice} reports the single-image latency, peak memory, and on-disk size.
+
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\centering
+\begin{threeparttable}
+\caption{On-Device CPU Benchmark}
+\label{tab:ondevice}
+\small
+\begin{tabular}{@{}l r r r r@{}}
+\toprule
+\textbf{Model} & \textbf{Size} & \textbf{Lat.\ 1T} & \textbf{Lat.\ 6T} & \textbf{RAM} \\
+                & \textbf{(MB)} & \textbf{(ms)} & \textbf{(ms)} & \textbf{(MB)} \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Classification}} \\
+FlipR                  & \textbf{11.2} & 244 & 76 & \textbf{603} \\
+EfficientNet-B0        & 16.3 & 176 & 100 & 654 \\
+MobileNetV3-Large      & 17.0 & \textbf{89} & 58 & 655 \\
+Drax-MobileNetV3-Large & 19.4 & 91 & \textbf{56} & 631 \\
+DenseNet-121           & 28.4 & 518 & 259 & 806 \\
+ResNet-18              & 44.8 & 298 & 91 & 629 \\
+DraxNet                & 66.0 & 362 & 114 & 649 \\
+ResNet-50              & 94.4 & 682 & 241 & 819 \\
+ConvNeXt-Tiny          & 111.4 & 683 & 217 & 786 \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Detection}} \\
+YOLO26                 & \textbf{5.4} & \textbf{110} & 68 & 620 \\
+YOLO11n                & 5.5 & 120 & 56 & \textbf{608} \\
+YOLOv8n                & 6.2 & 124 & \textbf{46} & 610 \\
+YOLO26 + DraxNet       & 39.7 & 420 & 152 & 727 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item Measured on one Intel Core i7-8750H CPU under PyTorch with float32 compute, batch $1$, $512\times512$ input, and no GPU. Lat.\ 1T and Lat.\ 6T are the median single-image forward-pass latency at $1$ and $6$ CPU threads over $40$ runs. Size is the committed checkpoint on disk. The classification checkpoints store float32 weights, while the Ultralytics detection checkpoints store float16 weights, so detection sizes are about half of (parameters $\times$ $4$ bytes). RAM is the peak resident memory of the whole inference process, which includes a fixed runtime of about $330$ MB ($360$ MB with the detection library). These runtime figures are specific to this host and are not comparable across papers. The portable cost measures are the parameters and multiply-adds in Tables~\ref{tab:classification_results} and~\ref{tab:detection_results}.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+Every classifier completes a forward pass in under $0.7$ seconds on a single thread and under $0.26$ seconds on six threads, and the whole inference process peaks below $0.82$ GB of memory, so the pipeline runs on a commodity laptop CPU without a GPU. The deployed configuration, FlipR followed by the YOLOv8n detector on a flagged image, runs in about $370$ ms on a single thread and $120$ ms on six threads. On-device latency tracks multiply-adds rather than parameters. The depthwise-separable backbones are fastest, at about $90$ ms on a single thread for MobileNetV3-Large and Drax-MobileNetV3-Large, while FlipR carries the fewest parameters but more compute and takes $244$ ms. The gap narrows to $76$ against $56$ ms at six threads, because FlipR's standard convolutions parallelize across cores better than depthwise convolutions. Peak memory and on-disk size instead follow parameter count, where FlipR is the smallest. Parameter count therefore predicts the storage and memory footprint, and multiply-adds predict the latency.
+
+The detectors show the same pattern. The stock nano detectors localize in $110$ to $124$ ms on a single thread, whereas the DraxNet-backboned variant is about four times slower at $420$ ms and seven times larger on disk, which reinforces the choice of a stock lightweight detector over the DraxNet backbone. Because latency and peak memory depend on the CPU, the framework, and the thread count, these figures establish feasibility on a commodity CPU rather than on a particular field device, and they are an internally controlled comparison on one host rather than a cross-paper benchmark. A constrained single-board or ARM device would be slower, so characterizing latency on the target deployment hardware remains future work.
 
 \subsection{Limitations}
 
@@ -444,7 +485,7 @@ The system's scope is limited to screening of non-pediatric patients since the r
 
 \subsection{Future Work}
 
-Future work seeks to evaluate the deployment efficiency of the pipeline in real-world use to benchmark inference latency and memory on a target device, complementing the static parameter and multiply-add counts reported here.
+Future work seeks to extend the commodity-CPU benchmark reported here (Table~\ref{tab:ondevice}) to the target field hardware, measuring inference latency and memory on constrained single-board or ARM devices under real-world use.
 
 Detection of full radiographic findings, such as cardiac size, pleural fluid, or non-TB abnormalities, as well as cardiac, pleural, and skeletal structures, are reserved for future work given additional data. Specific findings are more clinically meaningful for interpretation of the radiologic report, aligned with human reader interpretation of findings. This would also warrant use of a generative language model over a structured template for report generation, since synthesizing findings into a coherent report is no longer a fixed-format substitution but a genuine generation problem. This is demonstrated by recent chest X-ray systems that aggregate region-level findings into a report with an LLM~\cite{siemens_llm_cxr_2023, noh2026hybrid}.
 
