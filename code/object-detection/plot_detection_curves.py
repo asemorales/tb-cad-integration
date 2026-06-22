@@ -18,6 +18,7 @@ Run from the repo root (uses the project venv):
 from __future__ import annotations
 
 import csv
+import sys
 import warnings
 from pathlib import Path
 
@@ -25,16 +26,19 @@ warnings.filterwarnings("ignore")
 
 REPO = Path(__file__).resolve().parents[2]
 FIGDIR = REPO / "figures"
+
+sys.path.insert(0, str(FIGDIR))
+from paper_style import apply_style, style_axes  # noqa: E402
 DATA = REPO / "dataset/object-detection/dataset.yaml"
-IMG = 512
+IMG = 256
 
 # class index -> curve label used in the figures (active = ActiveTuberculosis,
 # obsolete = ObsoletePulmonaryTuberculosis).
 CLASS_LABEL = {0: "active", 1: "obsolete"}
-CURVE_STYLE = {  # label -> (display, color)
-    "all": ("All classes", "#222222"),
-    "active": ("Active TB", "#1f77b4"),
-    "obsolete": ("Latent TB", "#d62728"),
+CURVE_STYLE = {  # label -> (display, color); SciencePlots science palette, pinned per class
+    "all": ("All classes", "#474747"),
+    "active": ("Active TB", "#0C5DA5"),
+    "obsolete": ("Latent TB", "#FF2C00"),
 }
 
 # (column title, key); CSV models read figures/{pr,f1}_{key}.csv, live models
@@ -87,6 +91,7 @@ def main() -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    apply_style()
     fig, axes = plt.subplots(2, len(MODELS), figsize=(12, 5.2), sharex="row", sharey="row")
 
     for col, (title, key, weights) in enumerate(MODELS):
@@ -107,6 +112,7 @@ def main() -> None:
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1.02)
             ax.grid(True, alpha=0.25)
+            style_axes(ax)
             if row == 0:
                 ax.set_title(title, fontsize=11)
             if col == 0:

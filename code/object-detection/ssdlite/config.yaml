@@ -1,0 +1,16 @@
+# Reproducibility config for SSDLite320-MobileNetV3-Large (non-YOLO detection baseline).
+# Trained via torchvision in the shared code/_mlx/.venv (torchvision 0.22.1).
+# This is a CROSS-FAMILY baseline, not part of the controlled YOLO cohort:
+# different framework, optimizer, anchors, and native resolution. Disclose all of these.
+model: ssdlite320_mobilenet_v3_large
+family: torchvision-ssd
+mode: object_detection
+dataset: ../../../dataset/object-detection   # YOLO-format images/ + labels/, nc=2
+epochs: 100
+batch_size: 16
+optimizer: SGD                # lr 0.01, momentum 0.9, weight_decay 5e-4, cosine schedule
+image_size: 320               # SSDLite native (anchors designed for 320); NOT 512
+pretrained: false             # from scratch, to match the YOLO protocol
+seed: 42
+checkpoint: best-val-mAP50    # results/weights/best.pt
+metric: torchmetrics MeanAveragePrecision (COCO mAP@0.5 and mAP@0.5:0.95)

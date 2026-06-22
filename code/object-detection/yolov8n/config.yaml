@@ -2,9 +2,9 @@
 model: yolov8n            # mlx --model identifier; resolves to yolov8.yaml at nano scale
 mode: object_detection
 dataset: ../../../dataset/object-detection/dataset.yaml
-epochs: 100                   # matches the YOLO26 protocol; not yet run
-batch_size: 16               # matches the YOLO26 protocol
-image_size: 512              # matches the YOLO26 protocol (height/width)
+epochs: 100                   # matches the committed yolo26/draxnet-yolo26 runs
+batch_size: 16               # matches the committed yolo26/draxnet-yolo26 runs
+image_size: 256              # M2 fix: matched to yolo26/draxnet-yolo26 (256, not 512)
 device: cuda
-seed: 42
+seed: 0                       # M2 fix: matched to yolo26/draxnet-yolo26 (seed 0)
 checkpoint: best-validation   # ultralytics best.pt (--use-best default)
