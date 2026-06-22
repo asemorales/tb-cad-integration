@@ -1,0 +1,4 @@
+domain,n,mean_intensity,std_intensity_within,mean_intensity_sd_across,median_w,median_h
+train,3220,122.9157,66.0003,19.0039,512,512
+mc,138,112.8837,83.0037,21.0497,4020,4892
+sz,662,156.6400,63.7388,13.8164,2744,2937

@@ -1,0 +1,18 @@
+model: lighttbnet
+mode: image_classification
+dataset: ../../../dataset/classification
+epochs: 100
+batch_size: 16
+image_size: [512, 512]
+device: cuda
+seed: 42
+checkpoint: best-validation
+# LightTBNet-specific: N residual blocks (paper's recommended N=4, ~1.5M params).
+lighttbnet_blocks: 4
+notes: >
+  LightTBNet (Capellan-Martin et al., ISBI 2023, arXiv:2309.02140). Architecture
+  kept at N=4; trained under this repo's unified baseline recipe (Adam lr 1e-3,
+  unweighted CE, 512px RGB, 3-class) for a fair comparison with the other
+  classifiers, NOT the paper's native 256px/grayscale/binary/focal-loss setup.
+  Per-stage channel widths are this repo's design (paper omits them); built model
+  is ~1.26M params.

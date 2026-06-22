@@ -1,0 +1,12 @@
+model: mobilenet_v3_small
+mode: image_classification
+dataset: ../../../dataset/classification
+epochs: 100
+batch_size: 16
+image_size: [512, 512]
+device: cuda
+seed: 42
+checkpoint: best-validation
+notes: >
+  Stock torchvision MobileNetV3-Small (~1.52M params), trained from scratch under
+  the unified baseline recipe. Lightweight counterpart to mobilenetv3-large.

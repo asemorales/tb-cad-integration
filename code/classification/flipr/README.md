@@ -15,12 +15,12 @@ These are the recorded results from the `test` set of TBX11K :
 
 | Class       | Sensitivity | Specificity | AUROC  | Support |
 | ----------- | :---------: | :---------: | :----: | :-----: |
-| healthy     |   0.9965    |   0.9957    | 0.9993 |   570   |
-| sick-non-tb |   0.9930    |   0.9870    | 0.9987 |   570   |
-| tb          |   0.9417    |   0.9991    | 0.9984 |   120   |
-| **macro**   | **0.9770**  | **0.9939**  | **0.9988** | 1260 |
+| healthy     |   0.9965    |   0.9942    | 0.9993 |   570   |
+| sick-non-tb |   0.9947    |   0.9884    | 0.9987 |   570   |
+| tb          |   0.9417    |   1.0000    | 0.9996 |   120   |
+| **macro**   | **0.9776**  | **0.9942**  | **0.9992** | 1260 |
 
-Accuracy 0.9897 · macro F1 0.9834
+Accuracy 0.9905 · macro F1 0.9850
 
 ## Reproduction
 

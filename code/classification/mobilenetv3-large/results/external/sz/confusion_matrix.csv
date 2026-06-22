@@ -1,0 +1,11 @@
+,pred_normal,pred_tb
+actual_tb,34,302
+actual_normal,58,268
+
+metric,value
+sensitivity,0.898810
+specificity,0.177914
+fn_rate,0.101190
+fp_rate,0.822086
+n_tb,336
+n_normal,326

@@ -18,6 +18,7 @@ from mlx.modes.image_classification.models.drax_mobilenet import (
     build_drax_mobilenet_v3_large,
 )
 from mlx.modes.image_classification.models.draxnet import DraxNet, build_draxnet
+from mlx.modes.image_classification.models.lighttbnet import LightTBNet, build_lighttbnet
 from mlx.modes.image_classification.models.siamese_lenet import SiameseLeNet
 from mlx.modes.image_classification.models.standard import (
     build_standard_model,
@@ -36,13 +37,16 @@ STANDARD_MODEL_NAMES = {
     "drax_mobilenet_v3_large",
     "draxnet",
     "efficientnet_b0",
+    "lighttbnet",
     "mobilenet_v3_large",
+    "mobilenet_v3_small",
     "resnet18",
     "resnet50",
 }
 
 register_standard_model("draxnet", build_draxnet)
 register_standard_model("drax_mobilenet_v3_large", build_drax_mobilenet_v3_large)
+register_standard_model("lighttbnet", build_lighttbnet)
 
 
 def supported_model_names() -> list[str]:

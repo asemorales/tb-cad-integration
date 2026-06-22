@@ -1,0 +1,8 @@
+metric,value
+acc,0.528986
+auc,0.562716
+sensitivity,0.775862
+specificity,0.350000
+n_tb,58.000000
+n_normal,80.000000
+n_total,138.000000

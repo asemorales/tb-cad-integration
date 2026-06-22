@@ -198,6 +198,7 @@ def _train_standard(model_name: str, config: dict[str, Any]) -> None:
     batch_size = config.get("batch_size", 16)
     epochs = config.get("epochs", 20)
     learning_rate = config.get("lr") or 1e-3
+    accum_steps = max(1, int(config.get("grad_accum_steps", 1)))
     input_size = config.get("input_size", (224, 224))
     colored = config.get("colored", True)
     apply_transformations = bool(config.get("apply_transformations", False))
@@ -248,13 +249,23 @@ def _train_standard(model_name: str, config: dict[str, Any]) -> None:
                 progress.reset(batch_task)
                 progress.update(epoch_task, description=f"[magenta]Epoch {epoch + 1}/{epochs}")
 
+            # Gradient accumulation: with mean-reduction CrossEntropyLoss, summing
+            # (loss / accum_steps).backward() over `accum_steps` equal-size micro-batches
+            # yields the same averaged gradient as a single optimizer step on the full
+            # micro_batch * accum_steps batch (for all non-BatchNorm layers). This keeps the
+            # effective optimizer batch size at batch_size * accum_steps on memory-limited GPUs.
+            # Caveat: BatchNorm statistics are still computed per micro-batch, not over the
+            # full effective batch.
+            optimizer.zero_grad()
+            num_batches = len(train_loader)
             for batch_index, (images, targets) in enumerate(train_loader, start=1):
                 images, targets = images.to(device), targets.to(device)
-                optimizer.zero_grad()
                 logits = model(images)
                 loss = criterion(logits, targets)
-                loss.backward()
-                optimizer.step()
+                (loss / accum_steps).backward()
+                if batch_index % accum_steps == 0 or batch_index == num_batches:
+                    optimizer.step()
+                    optimizer.zero_grad()
                 running_loss += loss.item()
                 if progress is not None and batch_task is not None:
                     progress.advance(batch_task)

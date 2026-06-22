@@ -55,6 +55,7 @@ def build_parser() -> RichArgumentParser:
     parser.add_argument("--action", default=None)
     parser.add_argument("--embedding-size", type=int, default=4096, dest="embedding_size")
     parser.add_argument("--batch-size", type=int, default=1, dest="batch_size")
+    parser.add_argument("--grad-accum-steps", type=int, default=1, dest="grad_accum_steps")
     parser.add_argument("--dataset", "--dataset-path", default="./tmp/dataset", dest="dataset_path")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--output", default=None, dest="output_path")

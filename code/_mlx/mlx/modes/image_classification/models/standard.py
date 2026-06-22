@@ -14,6 +14,7 @@ SUPPORTED_TORCHVISION_MODELS = {
     "resnet50",
     "densenet121",
     "mobilenet_v3_large",
+    "mobilenet_v3_small",
     "efficientnet_b0",
     "convnext_small",
     "convnext_base",
@@ -85,6 +86,9 @@ def _build_torchvision_model(*, model_name: str, torchvision_models, pretrained:
     if model_name == "mobilenet_v3_large":
         weights = torchvision_models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None
         return torchvision_models.mobilenet_v3_large(weights=weights), "features.0.0"
+    if model_name == "mobilenet_v3_small":
+        weights = torchvision_models.MobileNet_V3_Small_Weights.DEFAULT if pretrained else None
+        return torchvision_models.mobilenet_v3_small(weights=weights), "features.0.0"
     if model_name == "efficientnet_b0":
         weights = torchvision_models.EfficientNet_B0_Weights.DEFAULT if pretrained else None
         return torchvision_models.efficientnet_b0(weights=weights), "features.0.0"
@@ -130,7 +134,7 @@ def _replace_classifier_head(model, model_name: str, num_classes: int) -> None:
     if model_name == "densenet121":
         model.classifier = nn.Linear(model.classifier.in_features, num_classes)
         return
-    if model_name == "mobilenet_v3_large":
+    if model_name in {"mobilenet_v3_large", "mobilenet_v3_small"}:
         model.classifier = nn.Sequential(
             model.classifier[0],
             model.classifier[1],

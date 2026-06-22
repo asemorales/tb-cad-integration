@@ -1,0 +1,4 @@
+pair,wasserstein,jensenshannon
+train_vs_mc,21.7099,0.3024
+train_vs_sz,33.7243,0.2888
+mc_vs_sz,47.5898,0.4266
