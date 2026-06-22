@@ -65,7 +65,8 @@ def test_generate_report_matches_spec_example():
         "FINDINGS:\n"
         "1. Right upper zone abnormality suggestive of active TB (high confidence).\n"
         "2. Left upper zone abnormality suggestive of inactive TB (medium confidence).\n"
-        "IMPRESSION: Appearances are consistent with pulmonary tuberculosis.\n"
+        "IMPRESSION: Appearances are consistent with active pulmonary tuberculosis, "
+        "with additional features of old, inactive disease.\n"
         "RECOMMENDATION: Refer for bacteriological confirmation."
     )
 
@@ -74,7 +75,7 @@ def test_generate_report_no_regions():
     rec = _rec("healthy", {"healthy": 0.92, "sick_non_tb": 0.06, "tb": 0.02}, [])
     out = generate_report(rec)
     assert "1. No TB-suggestive abnormality was localized." in out
-    assert "IMPRESSION: The screen is negative." in out
+    assert "IMPRESSION: No radiographic evidence of tuberculosis." in out
 
 
 def test_generate_report_orders_upper_to_lower():

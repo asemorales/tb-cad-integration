@@ -22,16 +22,33 @@ _COL_WORD = {"left": "left", "right": "right", "center": "central"}
 _ACTIVITY = {"active_tb": "active", "latent_tb": "inactive"}
 
 _IMPRESSION: dict[PredictedLabel, str] = {
-    "tb": "Appearances are consistent with pulmonary tuberculosis.",
     "sick_non_tb": "The image is abnormal, with non-TB disease the likely consideration.",
-    "healthy": "The screen is negative.",
+    # A normal radiograph does not exclude TB (it can present with a clear film),
+    # so the impression is scoped to the radiographic read, not the whole screen.
+    "healthy": "No radiographic evidence of tuberculosis.",
 }
 
+# The TB impression reflects lesion activity, since activity drives management:
+# active disease is potentially infectious and warrants confirmation, while old
+# inactive disease does not. The wording avoids the word "latent" by construction.
+_TB_IMPRESSION = "Appearances are consistent with pulmonary tuberculosis."
+_TB_IMPRESSION_ACTIVE = "Appearances are consistent with active pulmonary tuberculosis."
+_TB_IMPRESSION_INACTIVE = "Appearances are consistent with inactive pulmonary tuberculosis."
+_TB_IMPRESSION_BOTH = (
+    "Appearances are consistent with active pulmonary tuberculosis, "
+    "with additional features of old, inactive disease."
+)
+
 _RECOMMENDATION: dict[PredictedLabel, str] = {
-    "tb": "Refer for bacteriological confirmation.",
-    "sick_non_tb": "Recommend clinical correlation; TB-specific workup is not indicated by this screen.",
+    "sick_non_tb": "Recommend clinical correlation. TB-specific workup is not indicated by this screen.",
     "healthy": "No further TB workup is indicated by this screen.",
 }
+
+# The TB recommendation tracks activity: active disease is potentially infectious
+# and warrants bacteriological confirmation, while old inactive disease warrants
+# clinical correlation rather than bacteriology.
+_TB_RECOMMENDATION_ACTIVE = "Refer for bacteriological confirmation."
+_TB_RECOMMENDATION_INACTIVE = "Recommend clinical correlation to confirm inactive disease."
 
 _NO_FINDING = "No TB-suggestive abnormality was localized."
 
@@ -56,6 +73,32 @@ def _findings(regions: list[Region]) -> list[str]:
     return [_finding_line(r) for r in ordered]
 
 
+def _impression(label: PredictedLabel, regions: list[Region]) -> str:
+    """Return the IMPRESSION line, reflecting lesion activity for the TB class."""
+    if label != "tb":
+        return _IMPRESSION[label]
+    has_active = any(r.type == "active_tb" for r in regions)
+    has_inactive = any(r.type == "latent_tb" for r in regions)
+    if has_active and has_inactive:
+        return _TB_IMPRESSION_BOTH
+    if has_active:
+        return _TB_IMPRESSION_ACTIVE
+    if has_inactive:
+        return _TB_IMPRESSION_INACTIVE
+    return _TB_IMPRESSION
+
+
+def _recommendation(label: PredictedLabel, regions: list[Region]) -> str:
+    """Return the RECOMMENDATION line, reflecting lesion activity for the TB class."""
+    if label != "tb":
+        return _RECOMMENDATION[label]
+    has_active = any(r.type == "active_tb" for r in regions)
+    # A positive TB call with no localized region still warrants confirmation.
+    if has_active or not regions:
+        return _TB_RECOMMENDATION_ACTIVE
+    return _TB_RECOMMENDATION_INACTIVE
+
+
 def generate_report(output: DetectorOutput) -> str:
     """Return a deterministic three-section report for a ``DetectorOutput``.
 
@@ -69,6 +112,6 @@ def generate_report(output: DetectorOutput) -> str:
     return (
         "FINDINGS:\n"
         f"{numbered}\n"
-        f"IMPRESSION: {_IMPRESSION[label]}\n"
-        f"RECOMMENDATION: {_RECOMMENDATION[label]}"
+        f"IMPRESSION: {_impression(label, output.regions)}\n"
+        f"RECOMMENDATION: {_recommendation(label, output.regions)}"
     )
