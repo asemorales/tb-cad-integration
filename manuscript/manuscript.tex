@@ -304,7 +304,7 @@ Mean                   & 0.998 & 0.562 &                &       & 0.567 &       
 \end{threeparttable}
 \end{table*}
 
-To test out-of-distribution performance, we run each classifier, without retraining, on twos public CXR sets from different countries and scanners: the Montgomery County set (138 images, 58 TB) and the Shenzhen set (662 images, 336 TB)~\cite{jaeger2014datasets}. Results are reported in Table~\ref{tab:external_validation}.
+To test out-of-distribution performance, we run each classifier without retraining on two public CXR sets from different countries and scanners: the Montgomery County set (138 images, 58 TB) and the Shenzhen set (662 images, 336 TB)~\cite{jaeger2014datasets}. Results are reported in Table~\ref{tab:external_validation}.
 
 \textbf{Zero-shot performance on out-of-distribution data collapses from near-perfect to weak.}
 Both Montgomery and Shenzhen datasets are binary classification tasks, hence performance is evaluated with no TB and sick non-TB labels from TBX11K as the negative class and TB as the positive class. Mean AUC$_{\text{TB}}$ for all models falls from $0.998$ within TBX11K to $0.564$ across the two external sets, with several models at or below chance. Figure~\ref{fig:ood_roc} shows this collapse for the deployed FlipR classifier. The saturated in-distribution figures therefore reflect a single curated source rather than transferable screening skill. Models should be trained on a more diverse dataset in future work and calibrated per community site as per WHO guidance~\cite{who_cad_approval_2025}.
@@ -316,11 +316,11 @@ Both Montgomery and Shenzhen datasets are binary classification tasks, hence per
     \label{fig:ood_roc}
 \end{figure}
 
-\textbf{The two sites fail in opposite directions, tracking a measurable appearance shift.}
-On Montgomery the models lose sensitivity, under-flagging TB images, while on Shenzhen models lose specificity, over-flagging normal images. The two sets differ from the TBX11K training images in opposite ways in mean pixel intensity (Montgomery darker at $113$, Shenzhen brighter at $157$, against $123$ for TBX11K), with a Jensen-Shannon divergence of intensity histograms from the training set of $0.30$ and $0.29$ respectively (Figure~\ref{fig:domain_gap}). Because the direction of failure on each set is consistent with this, the collapse is likely due to a shift in image appearance rather than an artifact of adapting the three-class model to binary.
+\textbf{Model performance on the two sets fail in opposite directions due to shifts in image appearance across sets.}
+On Montgomery the models lose sensitivity, under-flagging TB images, while on Shenzhen the models lose specificity, over-flagging normal images. The two sets differ from the TBX11K training images in opposite ways in mean pixel intensity (Montgomery is darker at $113$, Shenzhen is brighter at $157$, compared to $123$ for TBX11K), with a Jensen-Shannon divergence of intensity histograms from the training set of $0.30$ and $0.29$ respectively (Figure~\ref{fig:domain_gap}). Because the direction of failure on each set is consistent with this, the collapse is likely due to a shift in image appearance rather than an artifact of adapting the three-class model to binary.
 
 \textbf{Two corrections recover model performance without retraining.}
-Real ACF CAD deployment should adapt to a new community site without relabeling, so we test two standard corrections that use only the unlabeled target images and leave all learned weights fixed. Adaptive batch normalization (AdaBN) recomputes each batch-normalization layer's running statistics on the target images~\cite{li2018adabn}. Lung-field cropping restricts the input to the lungs using an off-the-shelf segmentation model~\cite{cohen2022torchxrayvision}, removing burned-in text, borders, and field-of-view differences that are known cross-dataset shortcuts~\cite{zech2018shortcut}. The two corrections address different shift components. AdaBN recovers Montgomery, the intensity-shifted set, raising MobileNetV3-Large from $0.426$ to $0.589$ and Drax-MobileNetV3-Large from $0.571$ to $0.725$, whereas cropping recovers Shenzhen, the framing-shifted set, raising ResNet-50 from $0.637$ to $0.785$ and DraxNet from $0.604$ to $0.754$. Neither correct helps both datasets, consistent with each addressing a distinct difference in each dataset from training data. Across the ten models with adaptation runs, applying the better correction per site raises their mean AUC$_{\text{TB}}$ from $0.544$ to $0.643$, with the strongest models reaching $0.72$ to $0.79$. However, these figures remain below the in-distribution values and below the WHO operating targets, and thus do not establish deployment readiness. The results show instead that performance collapse is likely due to need for site calibration, which is correctable and consistent with WHO calibration guidance~\cite{who_cad_approval_2025}, rather than a loss of learned TB features.
+Real ACF CAD deployment should adapt to a new community site without relabeling, so we test two standard corrections that use only the unlabeled target images and leave all learned weights fixed. Adaptive batch normalization (AdaBN) recomputes each batch-normalization layer's running statistics on the target images~\cite{li2018adabn}. Lung-field cropping restricts the input to the lungs using an off-the-shelf segmentation model~\cite{cohen2022torchxrayvision}, removing burned-in text, borders, and field-of-view differences that are known cross-dataset shortcuts~\cite{zech2018shortcut}. The two corrections address different shift components. AdaBN recovers Montgomery, the intensity-shifted set, raising MobileNetV3-Large from $0.426$ to $0.589$ and Drax-MobileNetV3-Large from $0.571$ to $0.725$, whereas cropping recovers Shenzhen, the framing-shifted set, raising ResNet-50 from $0.637$ to $0.785$ and DraxNet from $0.604$ to $0.754$. Neither correction helps both datasets, consistent with each addressing a distinct difference in each dataset from training data. Across the ten models, applying the better correction per set raises mean AUC$_{\text{TB}}$ from $0.544$ to $0.643$, with the strongest models reaching $0.72$ to $0.79$. However, these figures remain below the in-distribution values and below the WHO operating targets, and thus do not establish deployment readiness. The results show instead that performance collapse is likely due to need for site calibration, which is correctable and consistent with WHO's guidance to calibrate TB CAD systems per community site~\cite{who_cad_approval_2025}, rather than due to a loss of learned TB features.
 
 % ============================================================
 % TUBERCULOSIS LESION DETECTION
@@ -328,7 +328,7 @@ Real ACF CAD deployment should adapt to a new community site without relabeling,
 \section{Tuberculosis Lesion Detection}
 \label{sec:tb_localization}
 
-The object detection module localizes each abnormality on the CXR as a bounding box and classifies each abnormality as either an active TB or latent TB lesion.
+The object detection module localizes each abnormality on the CXR with a bounding box and classifies each abnormality as either an active TB or latent TB lesion.
 
 \subsection{Dataset}
 
@@ -341,7 +341,7 @@ The object detection module localizes each abnormality on the CXR as a bounding 
 \small
 \begin{tabularx}{\columnwidth}{@{}l *{3}{C}@{}}
 \toprule
-\textbf{Annotation} & \textbf{Train} & \textbf{Val} & \textbf{Total} \\
+\textbf{Annotation} & \textbf{Train} & \textbf{Test} & \textbf{Total} \\
 \midrule
 Active-TB boxes & 724 & 248 & 972 \\
 Latent-TB boxes & 178 & 61 & 239 \\
@@ -351,24 +351,24 @@ Total boxes & 902 & 309 & 1,211 \\
 \end{tabularx}
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item Counts of bounding boxes. The 799 TBX11K TB images (599 train, 200 val) contain 1,211 boxes because one image may hold several boxes.
+\item Counts of bounding boxes. The 800 TBX11K images classified as TB on the image-level label contain 1,211 boxes because one image may have multiple boxes.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
 
 Object detection uses the TBX11K bounding-box annotations, with each region labeled active TB or latent TB. Dataset composition is shown in Table \ref{tab:localization_composition}.
 
-Active TB denotes ongoing, transmissible infection requiring treatment. Latent TB denotes prior, inactive infection that is not contagious but may reactivate. As Figure~\ref{fig:pipeline} shows, active TB is more visually salient and latent TB is more subtle. A CXR with an image-level label of TB may contain bounding box labels of only active-TB lesions ($630$ images), only latent-TB lesions ($139$ images), or both ($30$ images). This composition is consistent with real-world conditions~\cite{liu2020tbx11k}.
+Active TB denotes ongoing, transmissible infection requiring treatment. Latent TB denotes prior, inactive infection including healed lesions that are not contagious but may reactivate. As Figure~\ref{fig:pipeline} shows, active TB is more visually salient and latent TB is more subtle. A CXR with an image-level label of TB may contain bounding box labels of only active-TB lesions ($630$ images), only latent-TB lesions ($139$ images), or both ($30$ images). This composition is consistent with real-world conditions, where active TB is more common than latent TB~\cite{liu2020tbx11k}.
 
 Differentiation between active and latent TB is relatively understudied in TB CAD. In routine reporting, a radiologist may not always state whether a lesion is suspected as active or latent TB explicitly, instead inferring it from radiographic pattern, with consolidation and cavitation suggesting active disease and fibrotic linear opacities suggesting healed disease, alongside clinical and laboratory correlation~\cite{burrill2007tb_radiology}. Current literature understudies whether existing commercial CAD systems can differentiate latent from active TB~\cite{stoptb_cad_guide}.
 
 \subsection{Model Architecture}
 
-We evaluate four lightweight detectors at $256$px input: base YOLO26-n~\cite{yolo26}, two standard nano baselines YOLOv8n~\cite{yolov8} and YOLO11n~\cite{yolo11}, and a custom variant in which YOLO26's default feature extractor is replaced by the DraxNet backbone used in classification. All detectors are trained from random initialization under the same detection head and training protocol. The DraxNet variant retains YOLO26's head, which isolates the backbone's effect relative to base YOLO26.
+We evaluate four detectors at $256\times256$px input: base YOLO26-n~\cite{yolo26}, two standard nano baselines YOLOv8n~\cite{yolov8} and YOLO11n~\cite{yolo11}, and a custom variant in which YOLO26's default feature extractor is replaced by the DraxNet backbone used in classification. All detectors are trained from random initialization under the same detection head and training protocol. The DraxNet variant retains YOLO26's head, which isolates the backbone's effect relative to base YOLO26.
 
 \subsection{Model Training}
 
-Object detection follows the classification setup in training all detectors from random initialization for $100$ epochs at batch size $16$, but uses the Ultralytics default detection optimizer (auto-selected, base learning rate $10^{-2}$) rather than the Adam optimizer at $10^{-3}$ used for classification. As in classification, the best checkpoint (selected by mAP) is retained and used for evaluation.
+Object detection follows the classification setup in training all detectors from random initialization for $100$ epochs at batch size $16$, but uses the Ultralytics default detection optimizer (auto-selected, base learning rate $10^{-2}$) rather than the Adam optimizer at learning rate $10^{-3}$ used for classification. The best checkpoint (selected by mAP) is retained and used for evaluation.
 
 \subsection{Results}
 
@@ -393,31 +393,30 @@ YOLO26 + DraxNet & \textbf{0.5865} & \textbf{0.2748} & 0.1017 & 0.0310 & 19.7M &
 \end{tabular}
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item MACs is the number of multiply-accumulate operations for one $256\times256$ forward pass at the detection training resolution, and FLOPs are twice this.
+\item MACs is the number of multiply-accumulate operations for one $256\times256$px forward pass. FLOPs are twice MACs.
 \end{tablenotes}
 \end{threeparttable}
 \end{table*}
 
-Detection results are reported in Table~\ref{tab:detection_results}. The WHO 2025 operating-point protocol scores a binary triage probability and has no localization analogue, so detection is evaluated with mean average precision (mAP), the standard localization metric, rather than the WHO indices reported for the classifier in Table~\ref{tab:classification_results}.
-
+Detection results are reported in Table~\ref{tab:detection_results}.
 
 \textbf{Active TB is more likely to be detected than latent TB.}
-All four detectors localize active TB several times more accurately than latent TB, roughly three to six times at $\mathrm{mAP}_{50}$ and three to nine times at $\mathrm{mAP}_{50\text{-}95}$. This gap reflects the TBX11K class imbalance (active-TB regions outnumber latent-TB regions roughly 4:1) and the subtle appearance of latent-TB lesions. The TBX11K reference reports the same pattern across all detection methods, attributing it to imbalance~\cite{liu2023tbx11k_pami}, and it is consistent with human readers distinguishing latent TB less reliably than active TB~\cite{choi2023tb_activity}. The bias toward active TB also aligns with clinical triage priorities, because active TB requires urgent treatment.
+All detectors localize active TB several times more accurately than latent TB (roughly $3\text{-}6\times$ more accurate for active TB at $\mathrm{mAP}_{50}$ and $3\text{-}9\times$ more accurate at $\mathrm{mAP}_{50\text{-}95}$). This gap reflects the TBX11K class imbalance (active-TB regions outnumber latent-TB regions roughly 4:1) and the subtle appearance of latent-TB lesions. TBX11K also reports the same pattern across all detection methods, attributing it to class imbalance~\cite{liu2023tbx11k_pami}. This pattern is also consistent with radiologist reader performance, where experts distinguish latent TB less reliably than active TB~\cite{choi2023tb_activity}. The bias toward active TB aligns with clinical triage priorities, because active TB requires urgent treatment.
 
-\textbf{The custom backbone leads active-TB localization, but by too small a margin to justify its cost.}
-At matched input resolution and seed, the DraxNet backbone attains the best active-TB localization at $0.5865$ $\mathrm{mAP}_{50}$ and $0.2748$ $\mathrm{mAP}_{50\text{-}95}$, ahead of the stock YOLOv8n ($0.5563$ and $0.2582$) and YOLO11n ($0.5434$ and $0.2446$). The gain comes from replacing base YOLO26's feature extractor: DraxNet raises active-TB $\mathrm{mAP}_{50}$ from $0.4511$ to $0.5865$ ($+0.1354$) and $\mathrm{mAP}_{50\text{-}95}$ from $0.2110$ to $0.2748$ ($+0.0638$) over its own base, driven almost entirely by precision ($0.74 \rightarrow 0.82$) at unchanged recall (roughly $0.26$). The improvement does not extend to latent TB, where DraxNet is the weakest of the four ($0.1017$ $\mathrm{mAP}_{50}$ against $0.1175$ for YOLOv8n). The active-TB edge over YOLOv8n is small, about $0.03$ $\mathrm{mAP}_{50}$, while its cost is large: the DraxNet backbone raises the detector to $19.7$M parameters against YOLOv8n's $3.2$M, far above the lightweight budget this pipeline targets for edge deployment. The marginal active-TB gain does not justify roughly six times the parameters and compute, so we adopt the stock YOLOv8n as the detection model, the strongest of the lightweight detectors and within $0.03$ $\mathrm{mAP}_{50}$ of the best at a fraction of the footprint.
+\textbf{The DraxNet backbone improves active-TB localization, but by too small a margin to justify its cost.}
+YOLO26 with the DraxNet backbone attains the best active-TB localization at $0.5865$ $\mathrm{mAP}_{50}$ and $0.2748$ $\mathrm{mAP}_{50\text{-}95}$, ahead of the stock YOLOv8n ($0.5563$ and $0.2582$) and YOLO11n ($0.5434$ and $0.2446$). This performance gain comes from replacing base YOLO26's feature extractor: DraxNet raises active-TB $\mathrm{mAP}_{50}$ from $0.4511$ to $0.5865$ ($+0.1354$) and $\mathrm{mAP}_{50\text{-}95}$ from $0.2110$ to $0.2748$ ($+0.0638$) over the base YOLO26, driven almost entirely by precision ($0.74 \rightarrow 0.82$) at unchanged recall (roughly $0.26$). The improvement does not extend to latent TB, where DraxNet is the weakest of the four ($0.1017$ $\mathrm{mAP}_{50}$ against $0.1175$ for YOLOv8n). However, DraxNet's improvement over YOLOv8n is small, about $0.03$ $\mathrm{mAP}_{50}$, while its computational cost is large. The DraxNet backbone uses $19.7$M parameters compared to YOLOv8n's $3.2$M. The marginal active-TB gain does not justify roughly six times the parameters and compute, so we adopt YOLOv8n as the detection model, which is the strongest of the lightweight detectors and within $0.03$ $\mathrm{mAP}_{50}$ of the DraxNet backbone's performance at a fraction of the computational cost.
 
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=0.98\textwidth]{../figures/detection_curves.pdf}
-\caption{Detection precision-recall (top) and F1-confidence (bottom) curves for the four detectors. The active-TB curve sits well above the latent-TB curve for every model, and the latent-TB curve collapses at low confidence, so localization functions as a high-precision rule-in cue rather than a standalone detector. The larger DraxNet variant leads on active TB, with the stock YOLOv8n close behind at a fraction of the parameters.}
+\caption{Detection precision-recall (top) and F1-confidence (bottom) curves for the four detectors.}
 \label{fig:detection_curves}
 \end{figure*}
 
 \textbf{Recall, not precision, is the bottleneck.}
-Precision stays high while recall lags well behind for every detector, so the detectors localize confidently but miss many annotated TB regions. Figure~\ref{fig:detection_curves} shows recall sitting well below precision and the latent-TB curve collapsing at low confidence. The shortfall is uniform across detectors: aggregate recall stays near $0.26$ to $0.28$ for all four models, so no detector recovers a substantial share of the annotated lesions.
+Precision stays high while recall lags behind for every detector, so the detectors tend to localize detected TB correctly but miss many TB regions. Figure~\ref{fig:detection_curves} shows recall sits well below precision and the latent-TB curve collapses at low confidence. The pattern is uniform across detectors. Aggregate recall stays near $0.26\text{-}0.28$ for all four models, so no detector flags a substantial fraction of the lesions.
 
-\textbf{Localization is useful to confirm (rule-in) TB, but not to rule it out.} A test rules in disease when a positive result confirms it and rules out disease when a negative result excludes it. The high-precision, low-recall profile indicates that a flagged lesion is likely correct and warrants focused radiologist review, but the model cannot reliably exclude TB because most annotated lesions are missed. Localization is therefore most reliable as supporting region-level evidence for the classifier and report generation modules, rather than as a standalone detector for TB. Clinicians using the model may reliably use it for rule-in diagnosis, not for rule-out diagnosis.
+\textbf{Localization is useful to confirm (rule-in) TB, but not to rule it out.} A test rules in disease when a positive result confirms it (rule-in diagnosis) and rules out disease when a negative result excludes it (rule-out diagnosis). The high-precision, low-recall profile indicates that a flagged lesion is likely correct and warrants radiologist review, but the model cannot reliably exclude TB because most annotated lesions are missed. Localization is therefore most reliable as supporting region-level evidence for the classifier and report generation modules, rather than as a standalone detector for TB. Clinicians using the model may reliably use it for rule-in diagnosis, not for rule-out diagnosis.
 
 % ============================================================
 % REPORT GENERATION
