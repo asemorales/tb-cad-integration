@@ -424,16 +424,16 @@ Precision stays high while recall lags behind for every detector, so the detecto
 \section{Report Generation}
 \label{sec:explanation}
 
-The report generation module turns the detector's output into a structured radiology-style report a reader can act on without interpreting a boxed region or heatmap. That reader is a non-radiologist, in ACF often a radiographer, so the report is built around the triage and referral decision they make rather than a finding-level read. Example outputs are shown in Figures~\ref{fig:pipeline} and~\ref{fig:explanation_gallery}.
+The report generation module creates a report for non-radiologist readers to base referral decisions upon. In ACF the reader is a non-radiologist (often a radiographer), so the report is intended to indicate only active or latent TB, rather than full radiographic findings (ex. pleural effusions, cavitations) which are conventional for radiology reports but less intuitive for non-radiologist readers. Example outputs are shown in Figure~\ref{fig:explanation_gallery}.
 
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth]{../figures/cxr_report_gallery/cxr_report_gallery.png}
-\caption{Example reports on TBX11K scans, one panel per case type, produced by the deterministic report module from the detector output. The ground-truth class is overlaid at the top-left of each radiograph and the ground-truth TB regions are boxed, active TB as a solid line and latent TB as a dashed line. All panels are correct cases, so the ground truth matches the report.}
+\caption{Examples of generated reports. The ground-truth class is overlaid at the top-left of each CXR.}
 \label{fig:explanation_gallery}
 \end{figure*}
 
-The module follows the two-stage detector-to-text decomposition of Danu et al.~\cite{siemens_llm_cxr_2023}. However, because the detector here emits a closed TB vocabulary rather than open findings, we replace their proprietary detector and fine-tuned language model with the public models of this paper and a deterministic module, reserving a generative model for future work that uses specific radiographic findings. For current use, template-based report generation suffices and does not require significant additional memory or compute for resource-constrained settings.
+This module follows the two-stage detector-to-text architecture of Danu et al.~\cite{siemens_llm_cxr_2023}. However, because our detector emits a closed TB vocabulary rather than open findings, we replace their proprietary detector and fine-tuned language model with the public models of this paper and template-based report generation. Use of a generative model is reserved for future work that detects specific radiographic findings. For current use, template-based report generation suffices and does not require significant memory or compute for resource-constrained ACF settings.
 
 The module has two stages: an adapter that converts raw detector output into a validated structured record, and a template-based report generator that renders that record as text. The second stage receives only a structured record of what the classification and object detection modules produced. This restriction prioritizes faithfulness to model findings, because image-conditioned vision-language models such as CXR-LLaVA~\cite{lee2024cxr_llava} and LLaVA-Med~\cite{li2023llava_med}, as well as related work using LLMs~\cite{siemens_llm_cxr_2023}, may report findings the detector never flagged.
 
